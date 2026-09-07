@@ -126,57 +126,24 @@ function validateRetryPolicy(taskId: string, retry: TaskRetryPolicy): HaiResult<
 
 // ─── 业务函数 ───
 
-export async function loadPersistedTasks(taskRepo: SchedulerTaskRepository | null): Promise<void> {
+export async function loadPersistedTasks(taskRepo: SchedulerTaskRepository | null): Promise<HaiResult<void>> {
   if (!taskRepo)
-    return
+    return ok(undefined)
 
   const loadResult = await taskRepo.loadTasks()
-  if (!loadResult.success) {
-    logger.warn('Failed to load persisted tasks', { error: loadResult.error.message })
-    return
-  }
+  if (!loadResult.success)
+    return loadResult
 
-  let loadedCount = 0
-  for (const task of loadResult.data) {
-    const registerResult = await registerTask(task)
-    if (registerResult.success) {
-      loadedCount++
-      logger.debug('Loaded persisted task', { taskId: task.id, taskName: task.name })
-      continue
-    }
-
-    logger.warn('Failed to load persisted task', { taskId: task.id, error: registerResult.error.message })
-  }
-
-  if (loadedCount > 0)
-    logger.info('Loaded persisted tasks', { count: loadedCount })
+  return loadConfigTasks(loadResult.data)
 }
 
-export async function loadConfigTasks(tasks: TaskDefinition[]): Promise<void> {
-  let loadedCount = 0
+export async function loadConfigTasks(tasks: TaskDefinition[]): Promise<HaiResult<void>> {
   for (const task of tasks) {
-    if (!task.id) {
-      logger.warn('Skipping config task with empty id')
-      continue
-    }
-
-    if (hasTask(task.id)) {
-      logger.debug('Skipping config task, already registered from DB', { taskId: task.id })
-      continue
-    }
-
     const registerResult = await registerTask(task)
-    if (registerResult.success) {
-      loadedCount++
-      logger.debug('Loaded config task', { taskId: task.id, taskName: task.name })
-      continue
-    }
-
-    logger.warn('Failed to load config task', { taskId: task.id, error: registerResult.error.message })
+    if (!registerResult.success)
+      return registerResult
   }
-
-  if (loadedCount > 0)
-    logger.info('Loaded config tasks', { count: loadedCount })
+  return ok(undefined)
 }
 
 export async function registerTask(

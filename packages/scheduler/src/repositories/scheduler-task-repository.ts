@@ -234,8 +234,7 @@ export class SchedulerTaskRepository extends BaseReldbCrudRepository<TaskRow> {
       for (const row of rows.data) {
         const paramsResult = TaskParamsSchema.safeParse(row.params ?? {})
         if (!paramsResult.success) {
-          logger.warn('Skipping task with invalid params', { taskId: row.taskId, error: paramsResult.error.message })
-          continue
+          return err(HaiSchedulerError.CONFIG_ERROR, schedulerM('scheduler_invalidPersistedTask', { params: { taskId: row.taskId, error: paramsResult.error.message } }))
         }
 
         const handlerResult = row.handler == null
@@ -243,8 +242,7 @@ export class SchedulerTaskRepository extends BaseReldbCrudRepository<TaskRow> {
           : TaskHandlerConfigSchema.safeParse(row.handler)
 
         if (!handlerResult.success) {
-          logger.warn('Skipping task with invalid handler config', { taskId: row.taskId, error: handlerResult.error.message })
-          continue
+          return err(HaiSchedulerError.CONFIG_ERROR, schedulerM('scheduler_invalidPersistedTask', { params: { taskId: row.taskId, error: handlerResult.error.message } }))
         }
 
         const retryResult = row.retry == null
@@ -252,8 +250,7 @@ export class SchedulerTaskRepository extends BaseReldbCrudRepository<TaskRow> {
           : TaskRetryPolicySchema.safeParse(row.retry)
 
         if (!retryResult.success) {
-          logger.warn('Skipping task with invalid retry policy', { taskId: row.taskId, error: retryResult.error.message })
-          continue
+          return err(HaiSchedulerError.CONFIG_ERROR, schedulerM('scheduler_invalidPersistedTask', { params: { taskId: row.taskId, error: retryResult.error.message } }))
         }
 
         tasks.push({

@@ -86,7 +86,7 @@
 
 ### ARCH-07｜P1｜初始化任务加载失败时返回可判定结果
 
-- [ ] **任务**：把配置任务非法、持久化读取失败、部分任务加载失败传给初始化调用者，避免“启动成功但没加载业务任务”。
+- [x] **任务**：把配置任务非法、持久化读取失败、部分任务加载失败传给初始化调用者，避免“启动成功但没加载业务任务”。
 - **证据与影响〔实测＋静态确认〕**：[scheduler-functions.ts](../packages/scheduler/src/scheduler-functions.ts) 第 129/155 行加载失败只记 warn，返回 `void`；[main](../packages/scheduler/src/scheduler-main.ts) 继续返回 `ok`。本轮 `tasks` 含非法 cron 时，`init.success=true`、`tasks.size=0`。
 - **验收**：非法 cron、空任务 ID、DB 查询失败、部分任务失败均覆盖；默认阻止不完整启动，若支持显式部分加载模式，则失败清单必须结构化且调用方可见。
 - **建议负责人/工作量/依赖**：Scheduler 维护者 / M / 同步 README 和 CLI Scheduler skill。
@@ -248,3 +248,5 @@
 - **USER-05**：角色 code 改用 core.id.generate，移除名称清洗函数；同步应用 README、仓库及 CLI IAM skill。真实 Playwright API 连续创建中文、表情、同名及大小写相近角色，全部成功且标识唯一（1/1）；预览构建通过。
 
 - **ARCH-04**：API 超时覆盖完整响应流，按实际字节限制 1 MiB；通过本地 HTTP 服务验证响应头后停滞、超限、503 及中文表情成功响应。scheduler 47/47 测试、typecheck、build 通过，README 与 CLI scheduler skill 同步。
+
+- **ARCH-07**：初始化加载改为 HaiResult 失败透传；无效配置、重复任务、损坏持久化数据或读取失败清空本轮状态。新增真实 SQLite 损坏表/数据与恢复测试，scheduler 52/52、typecheck 通过；README 和 CLI scheduler skill 同步。

@@ -15,6 +15,7 @@
   "scheduler_dbNotInitialized": "Database not initialized, cannot save execution logs",
   "scheduler_configError": "Scheduler config validation failed: {error}",
   "scheduler_taskIdEmpty": "Task ID cannot be empty",
+  "scheduler_invalidPersistedTask": "Invalid persisted task {taskId}: {error}",
   "scheduler_taskRunning": "Task is currently running: {taskId}",
   "scheduler_invalidApiConfig": "Invalid api_config for task: {taskId}",
   "scheduler_lockAcquireFailed": "Failed to acquire distributed lock, another node already holds it: {taskId}",

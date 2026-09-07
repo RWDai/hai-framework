@@ -105,9 +105,16 @@ export const scheduler: SchedulerFunctions = {
         currentConfig = await initDatabase(parseResult.data)
         setHooks(hooks)
 
-        await loadPersistedTasks(taskRepo)
-        if (tasks.length > 0)
-          await loadConfigTasks(tasks)
+        const persistedResult = await loadPersistedTasks(taskRepo)
+        if (!persistedResult.success) {
+          await scheduler.close()
+          return persistedResult
+        }
+        const configResult = await loadConfigTasks(tasks)
+        if (!configResult.success) {
+          await scheduler.close()
+          return configResult
+        }
 
         logger.info('Scheduler module initialized', { enableDb: currentConfig.enableDb, taskCount: getTaskRegistry().size })
         return ok(undefined)
@@ -261,11 +268,6 @@ export const scheduler: SchedulerFunctions = {
   },
 
   async close(): Promise<void> {
-    if (!currentConfig) {
-      logger.info('Scheduler module already closed, skipping')
-      return
-    }
-
     logger.info('Closing scheduler module')
     stopTimer()
     clearJsTaskHandlerCache()
