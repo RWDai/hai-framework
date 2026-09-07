@@ -24,7 +24,7 @@
       })
       const data = await res.json()
 
-      if (data.success) {
+      if (res.ok && data.success && data.data?.sent === true) {
         submitResult = { success: true, message: m.contact_submit_success() }
         name = ''
         email = ''

@@ -63,6 +63,8 @@ description: 对应用代码进行审查：路由安全 → 认证授权 → i18
 
 ### HaiResult 处理
 
+- [ ] 投递等业务状态按 `sent` 等字段判断，失败保留用户输入；HTTP/HaiResult 成功不代替业务完成
+
 - [ ] 所有框架模块调用都检查 `result.success`
 - [ ] 上游 HaiResult 错误直接透传，不重新包装
 - [ ] 不使用 `try/catch` 来处理框架模块返回的错误（模块 API 不抛异常，统一返回 `HaiResult<T>`）

@@ -66,6 +66,7 @@ description: "Use when: reviewing app code in hai-framework, auditing app qualit
 - [ ] 权限用 `kit.guard.require`
 - [ ] 响应用 `kit.response.*`（不手动构造 Response）
 - [ ] HaiResult 型错误用 `kit.response.fromError` 转换
+- [ ] 投递等业务状态按 `sent` 等字段判断，失败保留用户输入；HTTP/HaiResult 成功不代替业务完成
 - [ ] Schema 定义集中在 `lib/server/schemas/`
 - [ ] 文件上传有类型白名单 + 大小限制
 - [ ] 无 SQL 字符串拼接
