@@ -86,7 +86,7 @@ export interface JsTaskConfig {
   kind: 'js'
   /** JS 函数字符串（仅允许受信任的服务端代码，不是安全沙箱） */
   code: string
-  /** 软超时时间，单位毫秒 */
+  /** 独立线程执行期限，单位毫秒（默认 30000，含线程启动）；超时终止线程后才允许重试 */
   timeout?: number
 }
 

@@ -11,6 +11,7 @@ import type { HaiResult } from '@h-ai/core'
 import type { JsTaskConfig, JsTaskHandler } from './scheduler-types.js'
 import { createHash } from 'node:crypto'
 import { Script } from 'node:vm'
+import { Worker } from 'node:worker_threads'
 import { err, ok } from '@h-ai/core'
 
 import { schedulerM } from './scheduler-i18n.js'
@@ -36,35 +37,35 @@ export function compileJsTaskHandler(config: JsTaskConfig): HaiResult<JsTaskHand
     return ok(cachedHandler)
 
   try {
-    const script = new Script(`(${config.code})`)
-    const candidate = script.runInNewContext({})
-    if (typeof candidate !== 'function') {
-      return err(
-        HaiSchedulerError.JS_COMPILE_FAILED,
-        schedulerM('scheduler_jsCompileFailed', { params: { error: 'Compiled result is not a function' } }),
-      )
-    }
+    // 主线程仅解析语法，不执行表达式或任务函数。
+    void new Script(`(${config.code})`)
 
     const handler: JsTaskHandler = async (context) => {
-      const functionResult = (candidate as JsTaskHandler)(context)
-      if (!config.timeout || config.timeout <= 0)
-        return functionResult
-
-      // 使用显式 Promise，确保函数提前完成时定时器被清理，避免定时器泄漏
       return await new Promise<unknown>((resolve, reject) => {
-        const timer = setTimeout(() => {
-          reject(new Error(`JS task timed out after ${config.timeout}ms`))
-        }, config.timeout!)
-        Promise.resolve(functionResult).then(
-          (result) => {
-            clearTimeout(timer)
-            resolve(result)
-          },
-          (error) => {
-            clearTimeout(timer)
-            reject(error)
-          },
-        )
+        const timeout = config.timeout ?? 30000
+        const worker = new Worker(new URL('./scheduler-js-worker.js', import.meta.url), {
+          workerData: { code: config.code, context },
+          execArgv: [],
+        })
+        let settled = false
+        let timer: ReturnType<typeof setTimeout> | undefined
+        const finish = (error?: Error, result?: unknown) => {
+          if (settled)
+            return
+          settled = true
+          clearTimeout(timer)
+          // 等待线程停止后才结束本次尝试，禁止超时任务与后续重试并行。
+          void worker.terminate().then(() => error ? reject(error) : resolve(result), reject)
+        }
+        timer = setTimeout(() => finish(new Error(schedulerM('scheduler_jsTimedOut', { params: { timeout } }))), timeout)
+        worker.once('error', error => finish(error instanceof Error ? error : new Error(String(error))))
+        worker.once('exit', code => finish(new Error(`JS worker exited before returning a result (${code})`)))
+        worker.once('message', (message: { success: boolean, data?: unknown, message?: string }) => {
+          if (message.success)
+            finish(undefined, message.data)
+          else
+            finish(new Error(message.message))
+        })
       })
     }
 
