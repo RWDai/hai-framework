@@ -1,5 +1,7 @@
 # hai Admin Console
 
+角色创建使用 `core.id.generate()` 生成独立 code；中文、表情及大小写相近的显示名称不会映射到同一个标识。修改名称不会改变角色 code。
+
 > 基于 hai-framework 构建的 SvelteKit 管理后台示例应用，展示框架全模块集成能力。
 
 ## ✨ 特性

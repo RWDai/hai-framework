@@ -148,11 +148,6 @@ async function syncRolePermissionIds(roleId: string, permissionIds: string[], fa
   return ok(undefined)
 }
 
-/** 将角色名称转为稳定的角色 code。 */
-export function createRoleCode(name: string): string {
-  return `role_${name.toLowerCase().replace(/[^a-z0-9_]/g, '_').replace(/_+/g, '_').replace(/^_|_$/g, '')}`
-}
-
 /** 批量把权限 code 转为权限 ID；不存在的 code 会被忽略。 */
 export async function resolvePermissionIds(codes: string[] | undefined): Promise<string[] | undefined> {
   if (codes === undefined)

@@ -7,6 +7,8 @@ description: 使用 @h-ai/iam 进行身份认证（密码/OTP/LDAP/API Key）、
 
 ## 能力契约
 
+管理界面自动创建角色时使用 `role_${core.id.generate()}` 生成 code，显示名称独立保存；不要通过移除中文、表情或折叠大小写生成标识。重命名不重建 code。
+
 | 项目 | 契约 |
 | --- | --- |
 | 能力 | 使用 @h-ai/iam 进行身份认证（密码/OTP/LDAP/API Key）、统一 Bearer Token 管理（TokenPair/refresh/revoke）与 RBAC 授权；当需求涉及登录、注册、权限检查、角色管理、Token 认证或通过 @h-ai/api-contract 暴露 IAM API 时使用。 |

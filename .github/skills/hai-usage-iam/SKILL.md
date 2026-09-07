@@ -7,6 +7,8 @@ description: "Use when: using @h-ai/iam, authentication, login, register, sessio
 
 ## 能力契约
 
+管理界面自动创建角色时使用 `role_${core.id.generate()}` 生成 code，显示名称独立保存；不要通过移除中文、表情或折叠大小写生成标识。重命名不重建 code。
+
 | 项目 | 契约 |
 | --- | --- |
 | 能力 | Use when: using @h-ai/iam, authentication, login, register, session management, RBAC, roles, permissions, user management, password reset, OTP, LDAP, token management, API contracts. 使用 @h-ai/iam 进行身份认证、Bearer Token 管理与 RBAC 授权。 |

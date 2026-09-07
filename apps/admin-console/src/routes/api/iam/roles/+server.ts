@@ -4,8 +4,9 @@
  * =============================================================================
  */
 
-import { createAdminRole, createRoleCode, listAdminRoles, resolvePermissionIds } from '$lib/server/iam-admin.js'
+import { createAdminRole, listAdminRoles, resolvePermissionIds } from '$lib/server/iam-admin.js'
 import { CreateRoleSchema } from '$lib/server/schemas/index.js'
+import { core } from '@h-ai/core'
 import { kit } from '@h-ai/kit'
 
 /**
@@ -34,7 +35,7 @@ export const POST = kit.handler(async ({ request, locals }) => {
 
   // 创建角色（IAM authz 内部已记录审计日志）
   const createResult = await createAdminRole({
-    code: createRoleCode(name),
+    code: `role_${core.id.generate()}`,
     name,
     description,
     permissions: permissionIds,

@@ -130,7 +130,7 @@
 
 ### USER-05｜P2｜中文角色名称不能生成相同角色代码
 
-- [ ] **任务**：把展示名称和唯一标识分开，复用已有 ID/唯一性能力；保留现有角色代码的稳定性。
+- [x] **任务**：把展示名称和唯一标识分开，复用已有 ID/唯一性能力；保留现有角色代码的稳定性。
 - **证据与影响〔源函数实测〕**：[创建角色 Schema](../apps/admin-console/src/lib/server/schemas/iam-schemas.ts) 第 95 行允许中文名称；[创建 API](../apps/admin-console/src/routes/api/iam/roles/+server.ts) 调用 [createRoleCode](../apps/admin-console/src/lib/server/iam-admin.ts) 第 152 行，移除非 ASCII 字符。本轮“管理员”“审核员”“运营”全部得到 `role_`，第二个不同中文角色会撞同一唯一代码。
 - **验收**：多个不同中文名称、emoji、纯符号、相近英文名称可按明确规则创建；禁止新规则悄悄改写已有角色引用。
 - **建议负责人/工作量/依赖**：Admin 维护者 / S / 无。
@@ -244,3 +244,5 @@
 - **USER-02**：删除 Base64 回退并显示未配置状态，Gallery/README/两份 UI skill 同步；UI check、build、全量 275/275 测试通过，含真实组件中文输入回归。
 
 - **USER-03**：按输入/回调/生命周期失效异步请求，输入即清空密文，拒绝显示双语错误；真实组件逆序、清空、失败、卸载测试通过，UI check/build 通过；README 与两份 skill 已同步。
+
+- **USER-05**：角色 code 改用 core.id.generate，移除名称清洗函数；同步应用 README、仓库及 CLI IAM skill。真实 Playwright API 连续创建中文、表情、同名及大小写相近角色，全部成功且标识唯一（1/1）；预览构建通过。
