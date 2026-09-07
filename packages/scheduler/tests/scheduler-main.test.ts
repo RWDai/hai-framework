@@ -116,11 +116,7 @@ describe('scheduler', () => {
     })
 
     it('应成功触发 API 任务', async () => {
-      const mockFetch = vi.fn().mockResolvedValue({
-        ok: true,
-        status: 200,
-        text: () => Promise.resolve('{"status":"ok"}'),
-      })
+      const mockFetch = vi.fn().mockResolvedValue(new Response('{"status":"ok"}'))
       vi.stubGlobal('fetch', mockFetch)
 
       await scheduler.init({ enableDb: false })
@@ -221,9 +217,9 @@ describe('scheduler', () => {
     it('失败时应按 retry.maxAttempts 重试并最终成功', async () => {
       const mockFetch = vi
         .fn()
-        .mockResolvedValueOnce({ ok: false, status: 500, text: () => Promise.resolve('server error') })
-        .mockResolvedValueOnce({ ok: false, status: 502, text: () => Promise.resolve('bad gateway') })
-        .mockResolvedValueOnce({ ok: true, status: 200, text: () => Promise.resolve('{"ok":true}') })
+        .mockResolvedValueOnce(new Response('server error', { status: 500 }))
+        .mockResolvedValueOnce(new Response('bad gateway', { status: 502 }))
+        .mockResolvedValueOnce(new Response('{"ok":true}'))
       vi.stubGlobal('fetch', mockFetch)
 
       await scheduler.init({ enableDb: false })

@@ -42,11 +42,7 @@ describe('scheduler-executor', () => {
   })
 
   it('应成功执行 API 任务', async () => {
-    const mockFetch = vi.fn().mockResolvedValue({
-      ok: true,
-      status: 200,
-      text: () => Promise.resolve('{"ok":true}'),
-    })
+    const mockFetch = vi.fn().mockResolvedValue(new Response('{"ok":true}'))
     vi.stubGlobal('fetch', mockFetch)
 
     const task = {

@@ -65,7 +65,7 @@
 
 ### ARCH-04｜P1｜让 HTTP 任务超时覆盖响应体读取
 
-- [ ] **任务**：保持超时控制直至响应体消费完成，结束时统一释放定时器；明确响应大小上限。
+- [x] **任务**：保持超时控制直至响应体消费完成，结束时统一释放定时器；明确响应大小上限。
 - **证据与影响〔实测〕**：[scheduler-executor.ts](../packages/scheduler/src/scheduler-executor.ts) 第 234 行在 `response.text()` 之前清除定时器。配置 30ms，本地服务立即返回响应头、160ms 后完成 body，任务约 174ms 后仍记为成功。无限流式响应可让执行长期占用资源。
 - **验收**：响应头快/body 慢、body 不结束、请求错误、正常响应均覆盖；超时能中止读取并返回失败，任务占用与定时器被释放。
 - **建议负责人/工作量/依赖**：Scheduler 维护者 / S / 回归 `retry` 行为。
@@ -246,3 +246,5 @@
 - **USER-03**：按输入/回调/生命周期失效异步请求，输入即清空密文，拒绝显示双语错误；真实组件逆序、清空、失败、卸载测试通过，UI check/build 通过；README 与两份 skill 已同步。
 
 - **USER-05**：角色 code 改用 core.id.generate，移除名称清洗函数；同步应用 README、仓库及 CLI IAM skill。真实 Playwright API 连续创建中文、表情、同名及大小写相近角色，全部成功且标识唯一（1/1）；预览构建通过。
+
+- **ARCH-04**：API 超时覆盖完整响应流，按实际字节限制 1 MiB；通过本地 HTTP 服务验证响应头后停滞、超限、503 及中文表情成功响应。scheduler 47/47 测试、typecheck、build 通过，README 与 CLI scheduler skill 同步。

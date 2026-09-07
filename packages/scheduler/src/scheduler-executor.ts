@@ -231,8 +231,31 @@ export async function executeApiTask(
       ...(body !== undefined ? { body: JSON.stringify(body) } : {}),
     })
 
-    clearTimeout(timer)
-    const responseText = await response.text()
+    // 超时覆盖响应体读取；按实际字节累计，避免信任 Content-Length。
+    const maxResponseBytes = 1024 * 1024
+    let receivedBytes = 0
+    let responseText = ''
+    const reader = response.body?.getReader()
+    if (reader) {
+      const decoder = new TextDecoder()
+      try {
+        while (true) {
+          const chunk = await reader.read()
+          if (chunk.done)
+            break
+          receivedBytes += chunk.value.byteLength
+          if (receivedBytes > maxResponseBytes) {
+            controller.abort()
+            return err(HaiSchedulerError.API_EXECUTION_FAILED, schedulerM('scheduler_apiResponseTooLarge'))
+          }
+          responseText += decoder.decode(chunk.value, { stream: true })
+        }
+        responseText += decoder.decode()
+      }
+      finally {
+        reader.releaseLock()
+      }
+    }
 
     if (!response.ok) {
       logger.error('API task returned non-OK status', {
@@ -251,7 +274,6 @@ export async function executeApiTask(
     return ok(responseText || null)
   }
   catch (error) {
-    clearTimeout(timer)
     const message = error instanceof Error ? error.message : String(error)
     logger.error('API task execution failed', { taskId: context.taskId, error: message, url: sanitizeUrl(url) })
     return err(
@@ -259,6 +281,9 @@ export async function executeApiTask(
       schedulerM('scheduler_apiExecutionFailed', { params: { error: message } }),
       error,
     )
+  }
+  finally {
+    clearTimeout(timer)
   }
 }
 
