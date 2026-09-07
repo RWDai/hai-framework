@@ -116,7 +116,7 @@
 
 ### USER-03｜P1｜加密输入不得被旧异步结果覆盖
 
-- [ ] **任务**：对输入变化、清空、失败和卸载失效旧请求，只有当前输入对应的成功结果可以更新密文。
+- [x] **任务**：对输入变化、清空、失败和卸载失效旧请求，只有当前输入对应的成功结果可以更新密文。
 - **证据与影响〔源函数实测〕**：[EncryptedInput.svelte](../packages/ui/src/lib/components/scenes/crypto/EncryptedInput.svelte) 第 70 行直接 `onencrypt(value).then(...)`，没有序号、失效检查和 rejection 处理。先输入 first 再输入 second，让第二次先完成、第一次后完成，最终 `value=second` 而 `encryptedValue=cipher-first`。清空后也存在旧结果回填路径。
 - **验收**：逆序返回、输入清空、回调拒绝、卸载后返回均覆盖；提交不能携带旧输入的密文，失败状态对使用者可见。
 - **建议负责人/工作量/依赖**：UI 维护者 / M / USER-02。
@@ -242,3 +242,5 @@
 - **USER-01**：联系表单严格检查 sent，未送达保留输入；应用 check 通过，真实 Chrome 失败保留/成功清空 E2E 1/1 通过。已同步官网 README 与两份应用审查 skill。
 
 - **USER-02**：删除 Base64 回退并显示未配置状态，Gallery/README/两份 UI skill 同步；UI check、build、全量 275/275 测试通过，含真实组件中文输入回归。
+
+- **USER-03**：按输入/回调/生命周期失效异步请求，输入即清空密文，拒绝显示双语错误；真实组件逆序、清空、失败、卸载测试通过，UI check/build 通过；README 与两份 skill 已同步。

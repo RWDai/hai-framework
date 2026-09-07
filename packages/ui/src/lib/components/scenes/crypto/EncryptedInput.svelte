@@ -57,18 +57,34 @@
 
   const dataAttributes = $derived(getDataAttributes(restProps))
   let showValue = $state(false)
+  let encryptionError = $state(false)
+
+  // 输入、回调或组件生命周期变化时，旧请求立即失效。
+  $effect(() => {
+    const input = value
+    const encrypt = onencrypt
+    encryptedValue = ''
+    encryptionError = false
+    if (!input || !encrypt)
+      return
+    let active = true
+    const isCurrent = () => active && value === input && onencrypt === encrypt
+    void Promise.resolve().then(() => encrypt(input)).then((encrypted) => {
+      if (isCurrent())
+        encryptedValue = encrypted
+    }).catch(() => {
+      if (isCurrent())
+        encryptionError = true
+    })
+    return () => {
+      active = false
+    }
+  })
 
   function handleInput(e: Event & { currentTarget: HTMLInputElement }) {
     value = e.currentTarget.value
 
-    if (value && onencrypt) {
-      onencrypt(value).then((encrypted) => {
-        encryptedValue = encrypted
-      })
-    }
-    else {
-      encryptedValue = ''
-    }
+    encryptedValue = ''
 
     oninput?.(e)
   }
@@ -89,6 +105,9 @@
 </script>
 
 <div {...dataAttributes} class='encrypted-input space-y-2 {className}'>
+  {#if encryptionError}
+    <p role='alert' class='text-sm text-error'>{uiM('encrypted_input_failed')}</p>
+  {/if}
   {#if !onencrypt}
     <p role='status' class='text-sm text-warning'>{uiM('encrypted_input_unavailable')}</p>
   {/if}

@@ -21,6 +21,8 @@ description: "Use when: building UI with @h-ai/ui, including Svelte 5 Runes comp
 
 ## 使用边界
 
+- 加密输入变更会清空密文，乱序/清空/卸载后的旧结果不会回填；失败显示错误。提交前确认当前密文非空，不缓存上次密文。
+
 - `EncryptedInput` 的 `onencrypt` 必须接入真实加密服务；`algorithm` 仅标注算法。缺少回调时显示不可用，不生成密文，不允许用编码代替加密。
 
 - 浏览器端界面优先复用 `@h-ai/ui` 现有组件，禁止在 app 内重复造轮子。

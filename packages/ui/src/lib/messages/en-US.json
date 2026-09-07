@@ -48,6 +48,7 @@
   "encrypted_input_hide": "Hide",
   "encrypted_input_result": "Encrypted",
   "encrypted_input_copy": "Copy",
+  "encrypted_input_failed": "Encryption failed. Edit the input to retry.",
   "encrypted_input_unavailable": "Encryption is not configured. No ciphertext will be generated.",
   "image_upload_placeholder": "Click to upload image",
   "image_upload_max_size_hint": "Max:",
