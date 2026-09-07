@@ -813,7 +813,7 @@ server.listen(3000, () => {
     iconClass='icon-[tabler--lock]'
     tone='error'
   >
-    <DemoCard title='EncryptedInput' description='加密输入框（SM4 对称加密）' code={codeEncryptedInput}>
+    <DemoCard title='EncryptedInput' description='加密输入框（此示例未配置加密回调，不产生密文）' code={codeEncryptedInput}>
       <div class='space-y-4'>
         <div class='p-4 rounded-lg bg-base-200/30'>
           <p class='text-xs font-medium text-base-content/50 mb-2'>SM4 对称加密</p>

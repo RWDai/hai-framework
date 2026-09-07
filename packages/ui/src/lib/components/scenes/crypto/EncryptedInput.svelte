@@ -58,11 +58,6 @@
   const dataAttributes = $derived(getDataAttributes(restProps))
   let showValue = $state(false)
 
-  // 模拟加密（实际应该调用 crypto 服务）
-  function encrypt(text: string): string {
-    return btoa(text)
-  }
-
   function handleInput(e: Event & { currentTarget: HTMLInputElement }) {
     value = e.currentTarget.value
 
@@ -70,9 +65,6 @@
       onencrypt(value).then((encrypted) => {
         encryptedValue = encrypted
       })
-    }
-    else if (value) {
-      encryptedValue = encrypt(value)
     }
     else {
       encryptedValue = ''
@@ -97,6 +89,9 @@
 </script>
 
 <div {...dataAttributes} class='encrypted-input space-y-2 {className}'>
+  {#if !onencrypt}
+    <p role='status' class='text-sm text-warning'>{uiM('encrypted_input_unavailable')}</p>
+  {/if}
   <!-- 输入框 -->
   <div class='relative'>
     <Input

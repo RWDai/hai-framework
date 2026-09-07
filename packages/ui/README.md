@@ -273,6 +273,8 @@ components/
 
 #### Crypto 加密展示（3 个）
 
+`EncryptedInput` 必须由调用方通过 `onencrypt` 接入真实加密服务，`algorithm` 仅用于说明该服务所用算法。未配置回调时组件明确提示不可用，不生成密文；没有 Base64 等编码回退。
+
 | 组件               | 描述     | 主要属性                                                |
 | ------------------ | -------- | ------------------------------------------------------- |
 | `EncryptedInput`   | 加密输入 | `value`, `encryptedValue`, `algorithm`, `showEncrypted` |

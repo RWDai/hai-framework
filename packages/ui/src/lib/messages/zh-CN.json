@@ -48,6 +48,7 @@
   "encrypted_input_hide": "隐藏",
   "encrypted_input_result": "已加密",
   "encrypted_input_copy": "复制",
+  "encrypted_input_unavailable": "未配置加密功能，当前输入不会生成密文。",
   "image_upload_placeholder": "点击上传图片",
   "image_upload_max_size_hint": "最大：",
   "image_upload_size_exceeded": "图片大小超出限制（最大",

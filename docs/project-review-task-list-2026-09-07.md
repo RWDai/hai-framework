@@ -109,7 +109,7 @@
 
 ### USER-02｜P1｜移除加密输入组件的 Base64 默认“加密”
 
-- [ ] **任务**：无加密回调时明确不可用，或接入真实加密能力；不得把编码结果标注为 SM2/SM4 密文。
+- [x] **任务**：无加密回调时明确不可用，或接入真实加密能力；不得把编码结果标注为 SM2/SM4 密文。
 - **证据与影响〔源函数实测〕**：[EncryptedInput.svelte](../packages/ui/src/lib/components/scenes/crypto/EncryptedInput.svelte) 第 61 行以 `btoa(text)` 回退，界面却按 `algorithm` 显示算法标签。`secret` 得到可直接逆转的 `c2VjcmV0`；中文输入抛 `InvalidCharacterError`。[Gallery](../apps/admin-console/src/routes/admin/ui-gallery/scenes/+page.svelte) 第 816 行直接描述为“SM4 对称加密”且未传回调；[UI README](../packages/ui/README.md) 列为加密输入。
 - **验收**：默认路径不产生伪密文；真实算法可验证解密还原，中文与 emoji 不抛未处理异常；组件、Gallery、README 与相关 skill 对能力边界描述一致。
 - **建议负责人/工作量/依赖**：UI＋Crypto 维护者 / M / USER-07 同步纠正演示。
@@ -240,3 +240,5 @@
 **修复状态**：以下按问题记录实现与验证；最终全量验收另行记录，历史审查证据不等于修复后的验收。
 
 - **USER-01**：联系表单严格检查 sent，未送达保留输入；应用 check 通过，真实 Chrome 失败保留/成功清空 E2E 1/1 通过。已同步官网 README 与两份应用审查 skill。
+
+- **USER-02**：删除 Base64 回退并显示未配置状态，Gallery/README/两份 UI skill 同步；UI check、build、全量 275/275 测试通过，含真实组件中文输入回归。
