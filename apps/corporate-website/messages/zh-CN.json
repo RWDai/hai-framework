@@ -185,5 +185,10 @@
   "validate_contact_min": "联系人至少需要 2 个字符",
   "validate_email_invalid": "请输入有效的邮箱地址",
   "validate_phone_min": "联系电话至少需要 6 个字符",
-  "validate_message_min": "合作需求说明至少需要 10 个字符"
+  "validate_message_min": "合作需求说明至少需要 10 个字符",
+  "api_chat_unavailable": "智能助手暂未开启，请通过联系表单与我们取得联系。",
+  "api_chat_failed": "抱歉，智能助手暂时无法回复，请稍后再试或通过联系表单联系我们。",
+  "api_contact_unconfigured": "邮件服务尚未配置，消息未发送。",
+  "api_contact_failed": "邮件发送失败，请重试。",
+  "api_contact_sent": "消息已成功发送"
 }

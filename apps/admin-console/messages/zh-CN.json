@@ -454,5 +454,19 @@
   "modules_crypto_hash_complete": "哈希计算完成",
   "modules_crypto_encrypt_complete": "SM4 加密及解密校验完成",
   "modules_crypto_example_title": "使用示例",
-  "modules_crypto_roundtrip": "解密还原（本次临时密钥不保存）"
+  "modules_crypto_roundtrip": "解密还原（本次临时密钥不保存）",
+  "gallery_crypto_section": "Crypto 加密安全",
+  "gallery_crypto_input": "加密输入框（此示例未配置加密回调，不产生密文）",
+  "gallery_crypto_sm4": "SM4 对称加密",
+  "gallery_crypto_sensitive": "输入敏感数据",
+  "gallery_crypto_disabled": "禁用状态",
+  "gallery_crypto_readonly": "不可编辑的加密输入",
+  "gallery_crypto_hash": "哈希值展示（SM3）",
+  "gallery_crypto_file": "文件哈希",
+  "gallery_crypto_digest": "SM3 摘要",
+  "gallery_crypto_signature": "数字签名状态示例（SM2，仅展示状态，未执行验签）",
+  "gallery_crypto_valid": "SM2 - 验证通过",
+  "gallery_crypto_invalid": "SM2 - 验证失败",
+  "gallery_crypto_unchecked": "SM2 - 未验证",
+  "gallery_crypto_sample": "未验证签名示例数据..."
 }

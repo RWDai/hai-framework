@@ -232,3 +232,5 @@ const result = await deploy.deployApp('./apps/my-app')
 - **hai-core** — 配置加载、日志、HaiResult 类型
 - **hai-reldb** — 数据库（Neon PostgreSQL）
 - **hai-cache** — 缓存（Upstash Redis）
+
+失败与降级提示也必须国际化：官网 API 按请求 locale 生成 AI 降级/邮件送达状态；未送达不能称为已接收。CLI 部署状态使用 cliM，Gallery 加密能力限制使用双语消息。中文与英文分别验证未配置、失败和成功路径，无需调用付费服务。

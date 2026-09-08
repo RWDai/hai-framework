@@ -10,6 +10,7 @@
   import { resolve } from '$app/paths'
   import DemoCard from '$lib/components/gallery/DemoCard.svelte'
   import DemoSection from '$lib/components/gallery/DemoSection.svelte'
+  import * as m from '$lib/paraglide/messages.js'
   // FileList 与 DOM 全局类型同名，必须显式导入
   import { AiDocumentEditor, AiTableEditor, ErrorPage, FileList, MarkdownRenderer, toast } from '@h-ai/ui'
 
@@ -808,39 +809,39 @@ server.listen(3000, () => {
   <div class='divider'></div>
 
   <DemoSection
-    title='Crypto 加密安全'
+    title={m.gallery_crypto_section()}
     subtitle='EncryptedInput / HashDisplay / SignatureDisplay'
     iconClass='icon-[tabler--lock]'
     tone='error'
   >
-    <DemoCard title='EncryptedInput' description='加密输入框（此示例未配置加密回调，不产生密文）' code={codeEncryptedInput}>
+    <DemoCard title='EncryptedInput' description={m.gallery_crypto_input()} code={codeEncryptedInput}>
       <div class='space-y-4'>
         <div class='p-4 rounded-lg bg-base-200/30'>
-          <p class='text-xs font-medium text-base-content/50 mb-2'>SM4 对称加密</p>
-          <EncryptedInput bind:value={encVal} algorithm='SM4' placeholder='输入敏感数据' />
+          <p class='text-xs font-medium text-base-content/50 mb-2'>{m.gallery_crypto_sm4()}</p>
+          <EncryptedInput bind:value={encVal} algorithm='SM4' placeholder={m.gallery_crypto_sensitive()} />
         </div>
         <div class='p-4 rounded-lg bg-base-200/30'>
-          <p class='text-xs font-medium text-base-content/50 mb-2'>禁用状态</p>
-          <EncryptedInput placeholder='不可编辑的加密输入' algorithm='SM4' disabled />
+          <p class='text-xs font-medium text-base-content/50 mb-2'>{m.gallery_crypto_disabled()}</p>
+          <EncryptedInput placeholder={m.gallery_crypto_readonly()} algorithm='SM4' disabled />
         </div>
       </div>
     </DemoCard>
 
-    <DemoCard title='HashDisplay' description='哈希值展示（SM3）' code={codeHashDisplay}>
+    <DemoCard title='HashDisplay' description={m.gallery_crypto_hash()} code={codeHashDisplay}>
       <div class='space-y-4'>
         <div class='p-4 rounded-lg bg-base-200/30'>
-          <HashDisplay value='e3b0c44298fc1c149afbf4c8996fb924' algorithm='SM3' label='文件哈希' copyable truncate />
+          <HashDisplay value='e3b0c44298fc1c149afbf4c8996fb924' algorithm='SM3' label={m.gallery_crypto_file()} copyable truncate />
         </div>
         <div class='p-4 rounded-lg bg-base-200/30'>
-          <HashDisplay value='a1b2c3d4e5f60718293a4b5c6d7e8f90' algorithm='SM3' label='SM3 摘要' copyable />
+          <HashDisplay value='a1b2c3d4e5f60718293a4b5c6d7e8f90' algorithm='SM3' label={m.gallery_crypto_digest()} copyable />
         </div>
       </div>
     </DemoCard>
 
-    <DemoCard title='SignatureDisplay' description='数字签名验证展示（SM2）' code={codeSignatureDisplay}>
+    <DemoCard title='SignatureDisplay' description={m.gallery_crypto_signature()} code={codeSignatureDisplay}>
       <div class='grid grid-cols-1 md:grid-cols-3 gap-4'>
         <div class='p-4 rounded-xl border-2 border-success/20 bg-success/5'>
-          <p class='text-xs font-semibold text-success mb-3'>SM2 - 验证通过</p>
+          <p class='text-xs font-semibold text-success mb-3'>{m.gallery_crypto_valid()}</p>
           <SignatureDisplay
             signature='MEUCIQDf4b2e8c7a3f1d5e9b0a2c4d6f8e0a1b3c5d7f9e1a3b5c7d9f1a3=='
             algorithm='SM2'
@@ -849,7 +850,7 @@ server.listen(3000, () => {
           />
         </div>
         <div class='p-4 rounded-xl border-2 border-error/20 bg-error/5'>
-          <p class='text-xs font-semibold text-error mb-3'>SM2 - 验证失败</p>
+          <p class='text-xs font-semibold text-error mb-3'>{m.gallery_crypto_invalid()}</p>
           <SignatureDisplay
             signature='MEQCIB2d4f6a8c0e2a4b6c8d0f2a4b6c8d0e2a4b6c8d0f2a4b6c8d0e=='
             algorithm='SM2'
@@ -858,9 +859,9 @@ server.listen(3000, () => {
           />
         </div>
         <div class='p-4 rounded-xl border-2 border-base-300 bg-base-200/30'>
-          <p class='text-xs font-semibold text-base-content/50 mb-3'>SM2 - 未验证</p>
+          <p class='text-xs font-semibold text-base-content/50 mb-3'>{m.gallery_crypto_unchecked()}</p>
           <SignatureDisplay
-            signature='未验证签名示例数据...'
+            signature={m.gallery_crypto_sample()}
             algorithm='SM2'
             copyable
           />

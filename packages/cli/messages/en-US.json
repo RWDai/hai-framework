@@ -1,5 +1,27 @@
 {
   "cli_invalidGenerateName": "Use a name starting with a letter, with only letters, digits, hyphens or underscores",
   "cli_generateOutsideWorkspace": "Generated files must remain inside the workspace, including symbolic link targets",
-  "cli_generateExists": "File already exists: {path}. Use --force to overwrite it"
+  "cli_generateExists": "File already exists: {path}. Use --force to overwrite it",
+  "cli_deploy_module_missing": "Deploy module not found. Install @h-ai/deploy first:",
+  "cli_deploy_load_credentials": "Loading credentials...",
+  "cli_deploy_credentials_failed": "Failed to load credentials: {message}",
+  "cli_deploy_credentials_loaded": "Loaded {count} credentials",
+  "cli_deploy_load_config": "Loading deploy config...",
+  "cli_deploy_config_missing": "Deploy config not found: {path}",
+  "cli_deploy_config_hint": "Run: hai add deploy to generate config template",
+  "cli_deploy_config_loaded": "Deploy config loaded",
+  "cli_deploy_scanning": "Scanning application...",
+  "cli_deploy_scan_failed": "Scan failed: {message}",
+  "cli_deploy_scanned": "Scanned: {name} (SvelteKit: {sveltekit}, Services: {services})",
+  "cli_deploy_none": "none",
+  "cli_deploy_initializing": "Initializing deploy module...",
+  "cli_deploy_init_failed": "Init failed: {message}",
+  "cli_deploy_initialized": "Deploy module initialized",
+  "cli_deploy_deploying": "Deploying application...",
+  "cli_deploy_failed": "Deploy failed: {message}",
+  "cli_deploy_success": "Deployment successful!",
+  "cli_deploy_url": "  URL: {url}",
+  "cli_deploy_id": "  ID: {id}",
+  "cli_deploy_env": "  Env: {names}",
+  "cli_deploy_command_failed": "Deploy command failed"
 }

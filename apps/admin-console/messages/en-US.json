@@ -454,5 +454,19 @@
   "modules_crypto_hash_complete": "Hash calculation complete",
   "modules_crypto_encrypt_complete": "SM4 encryption and decryption verified",
   "modules_crypto_example_title": "Usage Example",
-  "modules_crypto_roundtrip": "Decrypted plaintext (the temporary key is not stored)"
+  "modules_crypto_roundtrip": "Decrypted plaintext (the temporary key is not stored)",
+  "gallery_crypto_section": "Crypto Security",
+  "gallery_crypto_input": "Encrypted input (no encryption callback configured; no ciphertext is produced)",
+  "gallery_crypto_sm4": "SM4 symmetric encryption",
+  "gallery_crypto_sensitive": "Enter sensitive data",
+  "gallery_crypto_disabled": "Disabled",
+  "gallery_crypto_readonly": "Disabled encrypted input",
+  "gallery_crypto_hash": "Hash display (SM3)",
+  "gallery_crypto_file": "File hash",
+  "gallery_crypto_digest": "SM3 digest",
+  "gallery_crypto_signature": "Signature display (SM2; example states, no verification performed)",
+  "gallery_crypto_valid": "SM2 - Valid example",
+  "gallery_crypto_invalid": "SM2 - Invalid example",
+  "gallery_crypto_unchecked": "SM2 - Unverified example",
+  "gallery_crypto_sample": "Unverified signature sample..."
 }

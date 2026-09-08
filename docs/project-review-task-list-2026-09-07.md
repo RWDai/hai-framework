@@ -151,7 +151,7 @@
 
 ### USER-08｜P2｜失败与降级文案也应跟随语言选择
 
-- [ ] **任务**：补齐官网 AI 降级响应、联系接口提示和 CLI 部署提示的 i18n；核对 Gallery 页面说明。
+- [x] **任务**：补齐官网 AI 降级响应、联系接口提示和 CLI 部署提示的 i18n；核对 Gallery 页面说明。
 - **证据与影响〔静态确认〕**：[官网 chat API](../apps/corporate-website/src/routes/api/chat/+server.ts) 第 26 行及失败分支固定中文回复；[contact API](../apps/corporate-website/src/routes/api/contact/+server.ts) 的状态消息固定英文；[cli-deploy.ts](../packages/cli/src/commands/cli-deploy.ts) 大量固定英文状态与错误。界面切换语言后，最需要理解的失败提示仍可能混用语言。桌面示例已明确不包含 i18n，本任务不把该已声明范围自动扩大为桌面功能开发。
 - **验收**：中英文分别验证未配置、网络失败、操作成功；新增 key 成对更新；不要求真实外部服务才能验证降级提示。
 - **建议负责人/工作量/依赖**：官网＋CLI＋UI 维护者 / M / USER-01。
@@ -276,3 +276,5 @@
 - **USER-07**：管理端演示改为真实 Crypto SM3 与随机临时密钥/IV 的 SM4；显示成功前解密校验，输入变化清空旧输出。真实 Chrome 已验证 abc 标准摘要、重复哈希、中文表情解密与随机密文、清空（1/1）；应用 check 0 错误，README、Crypto skill、中英文提示同步。
 
 - **USER-06**：应用 HTTP 读取边界记录并返回 503，分页/权限/用户角色/仪表盘不再吞错；未知权限 code 返回 400，错误页支持刷新。真实 SQLite 断库、损坏权限表及零写入、后续分页故障和仪表盘失败测试通过；管理端 7/7、check 0 错误，README 与双份应用审查 skill 同步。
+
+- **USER-08**：官网 API 显式按请求 locale 输出 AI 降级、邮件未配置/失败/成功；CLI 全部部署状态接入 cliM，Gallery 加密限制和示例状态双语化。官网双语 handler 测试 4/4、CLI 10/10、CLI typecheck、两应用 check 0 错误通过；README、deploy/应用审查 skills 及中英文消息同步。

@@ -120,3 +120,5 @@ pnpm --filter corporate-website paraglide:compile # 编译 i18n 翻译文件
 - `@h-ai/reach`：消息触达（邮件 / 短信）
 - `@h-ai/kit`：SvelteKit hooks、guards、中间件、校验
 - `@h-ai/ui`：UI 组件库（场景组件、自动导入）
+
+失败与降级提示也必须国际化：官网 API 按请求 locale 生成 AI 降级/邮件送达状态；未送达不能称为已接收。CLI 部署状态使用 cliM，Gallery 加密能力限制使用双语消息。中文与英文分别验证未配置、失败和成功路径，无需调用付费服务。

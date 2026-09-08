@@ -13,6 +13,7 @@ import { core } from '@h-ai/core'
 import chalk from 'chalk'
 import ora from 'ora'
 import { parse } from 'yaml'
+import { cliM } from '../cli-i18n.js'
 
 /** deploy 命令选项 */
 export interface DeployCommandOptions extends GlobalOptions {
@@ -44,55 +45,55 @@ export async function deployCommand(options: DeployCommandOptions): Promise<void
       deployModule = await import('@h-ai/deploy')
     }
     catch {
-      core.logger.error(chalk.red('Deploy module not found. Install @h-ai/deploy first:'))
+      core.logger.error(chalk.red(cliM('cli_deploy_module_missing')))
       core.logger.info(chalk.cyan('  pnpm add @h-ai/deploy'))
-      throw new Error('Deploy module not found')
+      throw new Error(cliM('cli_deploy_module_missing'))
     }
 
     const { deploy } = deployModule
 
     // 1. 加载凭证
-    spinner.start('Loading credentials...')
+    spinner.start(cliM('cli_deploy_load_credentials'))
     const credResult = deploy.credentials.load()
     if (!credResult.success) {
-      throw new Error(`Failed to load credentials: ${credResult.error.message}`)
+      throw new Error(cliM('cli_deploy_credentials_failed', { params: { message: credResult.error.message } }))
     }
-    spinner.succeed(`Loaded ${credResult.data.length} credentials`)
+    spinner.succeed(cliM('cli_deploy_credentials_loaded', { params: { count: credResult.data.length } }))
 
     // 2. 读取部署配置
-    spinner.start('Loading deploy config...')
+    spinner.start(cliM('cli_deploy_load_config'))
     const configPath = resolve(appDir, 'config', '_deploy.yml')
     if (!existsSync(configPath)) {
-      spinner.fail(chalk.red(`Deploy config not found: ${configPath}`))
-      core.logger.info(chalk.cyan('  Run: hai add deploy  to generate config template'))
-      throw new Error(`Deploy config not found: ${configPath}`)
+      spinner.fail(chalk.red(cliM('cli_deploy_config_missing', { params: { path: configPath } })))
+      core.logger.info(chalk.cyan(cliM('cli_deploy_config_hint')))
+      throw new Error(cliM('cli_deploy_config_missing', { params: { path: configPath } }))
     }
 
     const configContent = readFileSync(configPath, 'utf-8')
     const rawConfig = interpolateEnvFallback(configContent)
     const deployConfig = parse(rawConfig)
-    spinner.succeed('Deploy config loaded')
+    spinner.succeed(cliM('cli_deploy_config_loaded'))
 
     // 3. 扫描应用
-    spinner.start('Scanning application...')
+    spinner.start(cliM('cli_deploy_scanning'))
     const scanResult = await deploy.scan(appDir)
     if (!scanResult.success) {
-      throw new Error(`Scan failed: ${scanResult.error.message}`)
+      throw new Error(cliM('cli_deploy_scan_failed', { params: { message: scanResult.error.message } }))
     }
     const scan = scanResult.data
-    spinner.succeed(`Scanned: ${scan.appName} (SvelteKit: ${scan.isSvelteKit}, Services: ${scan.requiredServices.join(', ') || 'none'})`)
+    spinner.succeed(cliM('cli_deploy_scanned', { params: { name: scan.appName, sveltekit: String(scan.isSvelteKit), services: scan.requiredServices.join(', ') || cliM('cli_deploy_none') } }))
 
     // 4. 初始化 deploy 模块
-    spinner.start('Initializing deploy module...')
+    spinner.start(cliM('cli_deploy_initializing'))
     const initResult = await deploy.init(deployConfig)
     if (!initResult.success) {
-      throw new Error(`Init failed: ${initResult.error.message}`)
+      throw new Error(cliM('cli_deploy_init_failed', { params: { message: initResult.error.message } }))
     }
     closeDeploy = () => deploy.close()
-    spinner.succeed('Deploy module initialized')
+    spinner.succeed(cliM('cli_deploy_initialized'))
 
     // 5. 执行部署
-    spinner.start('Deploying application...')
+    spinner.start(cliM('cli_deploy_deploying'))
     const deployResult = await deploy.deployApp(appDir, {
       projectName: options.projectName,
       skipProvision: options.skipProvision,
@@ -100,20 +101,20 @@ export async function deployCommand(options: DeployCommandOptions): Promise<void
     })
 
     if (!deployResult.success) {
-      throw new Error(`Deploy failed: ${deployResult.error.message}`)
+      throw new Error(cliM('cli_deploy_failed', { params: { message: deployResult.error.message } }))
     }
 
-    spinner.succeed(chalk.green('Deployment successful!'))
+    spinner.succeed(chalk.green(cliM('cli_deploy_success')))
     core.logger.info('')
-    core.logger.info(chalk.cyan(`  URL: ${deployResult.data.url}`))
-    core.logger.info(chalk.gray(`  ID:  ${deployResult.data.deploymentId}`))
+    core.logger.info(chalk.cyan(cliM('cli_deploy_url', { params: { url: deployResult.data.url } })))
+    core.logger.info(chalk.gray(cliM('cli_deploy_id', { params: { id: deployResult.data.deploymentId } })))
     if (deployResult.data.envVarsSet.length > 0) {
-      core.logger.info(chalk.gray(`  Env: ${deployResult.data.envVarsSet.join(', ')}`))
+      core.logger.info(chalk.gray(cliM('cli_deploy_env', { params: { names: deployResult.data.envVarsSet.join(', ') } })))
     }
     core.logger.info('')
   }
   catch (error) {
-    spinner.fail(chalk.red('Deploy command failed'))
+    spinner.fail(chalk.red(cliM('cli_deploy_command_failed')))
     core.logger.error(error instanceof Error ? error.message : String(error))
     throw error
   }

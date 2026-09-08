@@ -9,6 +9,7 @@
 import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
+import { core } from '@h-ai/core'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { deployCommand } from '../src/commands/cli-deploy.js'
 
@@ -44,6 +45,7 @@ function createDeployApp(): string {
 }
 
 beforeEach(() => {
+  core.i18n.setGlobalLocale('en-US')
   tmpRoot = mkdtempSync(join(tmpdir(), 'hai-cli-deploy-'))
   vi.clearAllMocks()
   mocks.loadCredentials.mockReturnValue({ success: true, data: [] })
@@ -66,6 +68,15 @@ afterEach(() => {
 })
 
 describe('deployCommand', () => {
+  it.each([
+    ['en-US', 'Deploy failed: network unavailable'],
+    ['zh-CN', '部署失败：network unavailable'],
+  ])('localizes deployment failures in %s', async (locale, message) => {
+    core.i18n.setGlobalLocale(locale)
+    mocks.deployApp.mockResolvedValue({ success: false, error: { message: 'network unavailable' } })
+    await expect(deployCommand({ appDir: createDeployApp(), cwd: tmpRoot, verbose: false })).rejects.toThrow(message)
+    expect(mocks.close).toHaveBeenCalledOnce()
+  })
   it.each(['credentials', 'scan', 'init'])('propagates failure from %s to the CLI entry', async (stage) => {
     const appDir = createDeployApp()
     const failed = { success: false, error: { code: 'test', message: 'stage rejected' } }
@@ -83,7 +94,8 @@ describe('deployCommand', () => {
     await expect(deployCommand({ cwd: tmpRoot, verbose: false })).rejects.toThrow('Deploy config not found')
   })
 
-  it('deploy 成功时应透传参数并关闭 deploy 模块', async () => {
+  it.each(['en-US', 'zh-CN'])('deploy 成功时应透传参数并关闭 deploy 模块 (%s)', async (locale) => {
+    core.i18n.setGlobalLocale(locale)
     const appDir = createDeployApp()
     mocks.deployApp.mockResolvedValue({
       success: true,

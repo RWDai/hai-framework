@@ -1,3 +1,4 @@
+import * as m from '$lib/paraglide/messages.js'
 /**
  * =============================================================================
  * AI Assistant API — 使用 @h-ai/ai 提供智能问答
@@ -18,12 +19,13 @@ Answer questions about the company's services, solutions, and general inquiries.
 Keep responses concise, professional, and in the same language as the user's question.
 If you don't know something specific about the company, provide a helpful general response.`
 
-export const POST = kit.handler(async ({ request }) => {
+export const POST = kit.handler(async ({ request, locals }) => {
+  const locale = locals.locale === 'en-US' ? 'en-US' : 'zh-CN'
   const { message } = await kit.validate.body(request, ChatSchema)
 
   if (!ai.isInitialized) {
     return kit.response.ok({
-      reply: '智能助手暂未开启，请通过联系表单与我们取得联系。',
+      reply: m.api_chat_unavailable({}, { locale }),
     })
   }
 
@@ -37,7 +39,7 @@ export const POST = kit.handler(async ({ request }) => {
   if (!result.success) {
     core.logger.error('AI chat failed', { error: result.error.message })
     return kit.response.ok({
-      reply: '抱歉，智能助手暂时无法回复，请稍后再试或通过联系表单联系我们。',
+      reply: m.api_chat_failed({}, { locale }),
     })
   }
 

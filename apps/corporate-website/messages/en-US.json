@@ -185,5 +185,10 @@
   "validate_contact_min": "Contact name must be at least 2 characters",
   "validate_email_invalid": "Please enter a valid email address",
   "validate_phone_min": "Phone number must be at least 6 characters",
-  "validate_message_min": "Cooperation description must be at least 10 characters"
+  "validate_message_min": "Cooperation description must be at least 10 characters",
+  "api_chat_unavailable": "The assistant is unavailable. Please use our contact form.",
+  "api_chat_failed": "The assistant could not reply. Please try again later or use our contact form.",
+  "api_contact_unconfigured": "Email delivery is not configured. Your message has not been sent.",
+  "api_contact_failed": "Email delivery failed. Please try again.",
+  "api_contact_sent": "Message sent successfully"
 }

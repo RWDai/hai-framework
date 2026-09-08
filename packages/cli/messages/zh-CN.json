@@ -1,5 +1,27 @@
 {
   "cli_invalidGenerateName": "名称必须以字母开头，且仅包含字母、数字、短横线或下划线",
   "cli_generateOutsideWorkspace": "生成文件必须位于工作目录内，符号链接目标也不得越界",
-  "cli_generateExists": "文件已存在：{path}。使用 --force 才可覆盖"
+  "cli_generateExists": "文件已存在：{path}。使用 --force 才可覆盖",
+  "cli_deploy_module_missing": "未找到部署模块，请先安装 @h-ai/deploy：",
+  "cli_deploy_load_credentials": "正在加载凭证…",
+  "cli_deploy_credentials_failed": "加载凭证失败：{message}",
+  "cli_deploy_credentials_loaded": "已加载 {count} 项凭证",
+  "cli_deploy_load_config": "正在加载部署配置…",
+  "cli_deploy_config_missing": "未找到部署配置：{path}",
+  "cli_deploy_config_hint": "运行 hai add deploy 生成部署配置模板",
+  "cli_deploy_config_loaded": "部署配置已加载",
+  "cli_deploy_scanning": "正在扫描应用…",
+  "cli_deploy_scan_failed": "扫描失败：{message}",
+  "cli_deploy_scanned": "已扫描：{name}（SvelteKit：{sveltekit}，服务：{services}）",
+  "cli_deploy_none": "无",
+  "cli_deploy_initializing": "正在初始化部署模块…",
+  "cli_deploy_init_failed": "初始化失败：{message}",
+  "cli_deploy_initialized": "部署模块已初始化",
+  "cli_deploy_deploying": "正在部署应用…",
+  "cli_deploy_failed": "部署失败：{message}",
+  "cli_deploy_success": "部署成功！",
+  "cli_deploy_url": "  地址：{url}",
+  "cli_deploy_id": "  标识：{id}",
+  "cli_deploy_env": "  环境变量：{names}",
+  "cli_deploy_command_failed": "部署命令失败"
 }
