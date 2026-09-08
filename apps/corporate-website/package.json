@@ -12,6 +12,9 @@
     "svelte5",
     "seo"
   ],
+  "engines": {
+    "node": ">=22.12.0"
+  },
   "scripts": {
     "paraglide:compile": "paraglide-js compile --project ./project.inlang --outdir ./src/lib/paraglide",
     "dev": "vite dev",

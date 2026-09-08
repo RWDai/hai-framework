@@ -17,5 +17,5 @@ export const baseConfig: Options = {
   clean: true,
   sourcemap: !isDockerProdBuild,
   treeshake: true,
-  target: 'node20',
+  target: 'node22',
 }

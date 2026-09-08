@@ -38,6 +38,9 @@
   "publishConfig": {
     "access": "public"
   },
+  "engines": {
+    "node": ">=22.12.0"
+  },
   "scripts": {
     "build": "svelte-package -i src/lib",
     "dev": "svelte-package -i src/lib --watch",

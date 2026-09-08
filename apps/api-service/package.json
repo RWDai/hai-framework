@@ -10,6 +10,9 @@
     "hono",
     "orpc"
   ],
+  "engines": {
+    "node": ">=22.12.0"
+  },
   "scripts": {
     "dev": "tsup --watch --onSuccess \"node dist/index.js\"",
     "build": "tsup",

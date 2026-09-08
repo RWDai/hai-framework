@@ -7,6 +7,8 @@ description: 应用开发入口技能。提供项目架构总览（SSR/SPA/原�
 
 ## 能力契约
 
+框架开发、CLI、服务端最低 Node.js 版本统一为 22.12.0；包与脚手架 engines、共享 node22 编译目标和 CI 最低版本必须同步。不再按 Node 20 编写兼容分支。
+
 tsup 包的 Turbo `build` 依赖不缓存的 `build:clean`（仅清本包 dist），再执行构建或恢复缓存。不要移除此步骤：Turbo 缓存恢复不会自动移除另一模式的多余文件。
 
 使用 Turbo 时，影响构建的环境变量必须进入任务 `env`，共享构建配置进入 `globalDependencies`。框架的 `HAI_DOCKER_PROD_BUILD=true` 关闭声明和 sourcemap，应与普通构建使用不同缓存；PUBLIC/VITE/TAURI 变量同样参与构建缓存。切换后验证实际产物并恢复普通开发构建。

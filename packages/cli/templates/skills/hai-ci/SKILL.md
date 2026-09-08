@@ -7,6 +7,8 @@ description: 设计和维护 hai-framework 应用仓库的 CI/CD、GitHub Action
 
 ## 能力契约
 
+框架完整质量门禁在 Node.js 22.12.0（声明的最低版本）执行；升级 engines 时同步 CI、README 和脚手架，不能只在更高版本通过后宣称最低版本通过。
+
 框架发布通过实际 npm 精确版本和 GitHub Release 判断完成，不能只看 tag。部分失败重跑原提交，只补发缺失包；npm 全部成功后再建 tag/Release。查询异常与 404 必须区分，tag 指向其他提交时停止补发，禁止将新源码混入旧版本。
 
 版本同步必须在提交和质量门禁之前完成。框架 `pnpm typecheck` 先执行只读 `check:versions`，发布 job 不得修改 package.json、模板或追加版本提交；发布源码与构建产物必须来自同一份已验收提交。

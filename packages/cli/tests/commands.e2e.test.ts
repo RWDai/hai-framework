@@ -56,7 +56,8 @@ async function exists(dir: string, rel: string) {
   return fse.pathExists(path.join(dir, rel))
 }
 
-function expectQualityGateScripts(pkg: { scripts?: Record<string, string> }) {
+function expectQualityGateScripts(pkg: { scripts?: Record<string, string>, engines?: { node?: string } }) {
+  expect(pkg.engines?.node).toBe('>=22.12.0')
   expect(pkg.scripts?.build).toBeDefined()
   expect(pkg.scripts?.typecheck).toBeDefined()
   expect(pkg.scripts?.lint).toBeDefined()

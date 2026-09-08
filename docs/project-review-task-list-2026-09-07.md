@@ -181,7 +181,7 @@
 
 ### DEV-04｜P2｜统一运行时版本要求与快速开始
 
-- [ ] **任务**：明确仓库开发、发布包运行、生成项目三种场景的 Node/pnpm 支持范围，并同步 README、engines、模板与 CI。
+- [x] **任务**：明确仓库开发、发布包运行、生成项目三种场景的 Node/pnpm 支持范围，并同步 README、engines、模板与 CI。
 - **证据与影响〔静态确认〕**：[Admin README](../apps/admin-console/README.md) 第 21 行要求 Node ≥20；[根 package.json](../package.json) 要求 ≥22，[CI](../.github/workflows/ci.yml) 只运行 Node 22，[共享 tsup](../packages/tsup.base.ts) 则设置 `target: node20`。这些层面的版本要求未解释区分，按应用说明准备环境不能保证满足仓库安装要求。
 - **验收**：文档给出同一支持矩阵；最低支持版本完成安装和最小启动；不以编译 target 推导全部运行时兼容性，不无依据扩大版本支持。
 - **建议负责人/工作量/依赖**：开发工具维护者＋文档维护者 / S / PM-01。
@@ -266,3 +266,5 @@
 - **DEV-02**：版本同步改为提交前显式执行，新增 --check 只读校验并纳入根 typecheck；release 删除同步和追加提交步骤，保留同提交构建产物。脚本真实子进程验证漂移不写入、同步后通过、损坏 JSON 失败（1/1），当前仓库 check:versions 与定向 lint 通过。README、ci/framework-sync skills 同步。
 
 - **DEV-01**：发布完成判定同时查询 npm 精确版本和 GitHub Release；仅补发缺失包，全部成功后再创建 tag/Release，查询异常及 tag 指向其他提交均失败。脚本回归 4/4、工作流 YAML 解析与步骤顺序校验、定向 lint 通过；未真实发布。README 与 ci skill 同步。
+
+- **DEV-04**：统一 Node >=22.12.0：根、全部包/应用、11 个 package 模板、README、build/ci skills、共享 node22 编译目标与 CI 最低版本同步。真实 Node 22.12.0 下 Core 186/186、CLI 生成及 engines 断言 100/100 通过；当前 check:versions 通过。最低版本全仓验收由 CI 配置覆盖，本机最终全量使用原有 Node 24。
