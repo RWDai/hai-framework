@@ -174,7 +174,7 @@
 
 ### DEV-03｜P1｜CLI 部署失败必须返回失败退出码
 
-- [ ] **任务**：统一命令失败结果，让缺少模块、缺少配置、初始化失败和部署失败均以非零退出码结束。
+- [x] **任务**：统一命令失败结果，让缺少模块、缺少配置、初始化失败和部署失败均以非零退出码结束。
 - **证据与影响〔静态确认〕**：[cli-deploy.ts](../packages/cli/src/commands/cli-deploy.ts) 第 47、68、89、105 行等分支只打印错误并 `return`；[cli-main.ts](../packages/cli/src/cli-main.ts) 第 146 行只在 catch 中 `process.exit(1)`。这些正常返回的失败分支会被自动化调用方当作成功。
 - **验收**：以真实 CLI 子进程覆盖上述分支并断言非零；成功路径退出 0；不只断言屏幕包含失败文字。使用隔离配置和本地模拟，禁止为此实际部署。
 - **建议负责人/工作量/依赖**：CLI 维护者 / S / USER-08 同步错误消息。
@@ -256,3 +256,5 @@
 - **ARCH-06**：close 拒绝新任务，取消 HTTP、Worker 和退避等待，等待执行链退出后清理；Hook 通过事件 signal 协作取消。真实 HTTP 关闭、Worker、重试、迟到 Hook 与同 ID 重初始化隔离验证通过；scheduler 58/58、typecheck、build 通过。README、公共事件类型、CLI skill 同步。
 
 - **ARCH-03**：按 tickInterval 刷新持久化定义，API 与获锁后的每次执行前重查，禁用/删除/改期或读取失败中断旧执行。两个真实进程共享 SQLite 与 Podman Redis 验证注册、参数更新、禁用、删除、一次性删除及同分钟仅一次成功；scheduler 59/59、typecheck、build 通过。README 和 CLI skill 明确刷新及本地配置边界。
+
+- **DEV-03**：部署各失败分支抛给 CLI 统一入口，进程以 1 退出；保留 finally 清理并传播清理异常。部署命令及入口 16/16、CLI typecheck/build 通过；构建后的真实 CLI 缺配置退出码为 1。CLI README 与 hai-deploy skill 同步。

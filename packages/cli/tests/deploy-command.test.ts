@@ -66,6 +66,23 @@ afterEach(() => {
 })
 
 describe('deployCommand', () => {
+  it.each(['credentials', 'scan', 'init'])('propagates failure from %s to the CLI entry', async (stage) => {
+    const appDir = createDeployApp()
+    const failed = { success: false, error: { code: 'test', message: 'stage rejected' } }
+    if (stage === 'credentials')
+      mocks.loadCredentials.mockReturnValue(failed)
+    if (stage === 'scan')
+      mocks.scan.mockResolvedValue(failed)
+    if (stage === 'init')
+      mocks.init.mockResolvedValue(failed)
+    await expect(deployCommand({ appDir, cwd: tmpRoot, verbose: false })).rejects.toThrow('stage rejected')
+    expect(mocks.deployApp).not.toHaveBeenCalled()
+  })
+
+  it('rejects missing configuration', async () => {
+    await expect(deployCommand({ cwd: tmpRoot, verbose: false })).rejects.toThrow('Deploy config not found')
+  })
+
   it('deploy 成功时应透传参数并关闭 deploy 模块', async () => {
     const appDir = createDeployApp()
     mocks.deployApp.mockResolvedValue({
@@ -101,7 +118,7 @@ describe('deployCommand', () => {
       error: { code: 'hai:deploy:001', message: 'deploy failed' },
     })
 
-    await deployCommand({ appDir, cwd: tmpRoot, verbose: false })
+    await expect(deployCommand({ appDir, cwd: tmpRoot, verbose: false })).rejects.toThrow('Deploy failed')
 
     expect(mocks.close).toHaveBeenCalledTimes(1)
   })

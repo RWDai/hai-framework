@@ -46,7 +46,7 @@ export async function deployCommand(options: DeployCommandOptions): Promise<void
     catch {
       core.logger.error(chalk.red('Deploy module not found. Install @h-ai/deploy first:'))
       core.logger.info(chalk.cyan('  pnpm add @h-ai/deploy'))
-      return
+      throw new Error('Deploy module not found')
     }
 
     const { deploy } = deployModule
@@ -55,8 +55,7 @@ export async function deployCommand(options: DeployCommandOptions): Promise<void
     spinner.start('Loading credentials...')
     const credResult = deploy.credentials.load()
     if (!credResult.success) {
-      spinner.fail(chalk.red(`Failed to load credentials: ${credResult.error.message}`))
-      return
+      throw new Error(`Failed to load credentials: ${credResult.error.message}`)
     }
     spinner.succeed(`Loaded ${credResult.data.length} credentials`)
 
@@ -66,7 +65,7 @@ export async function deployCommand(options: DeployCommandOptions): Promise<void
     if (!existsSync(configPath)) {
       spinner.fail(chalk.red(`Deploy config not found: ${configPath}`))
       core.logger.info(chalk.cyan('  Run: hai add deploy  to generate config template'))
-      return
+      throw new Error(`Deploy config not found: ${configPath}`)
     }
 
     const configContent = readFileSync(configPath, 'utf-8')
@@ -78,8 +77,7 @@ export async function deployCommand(options: DeployCommandOptions): Promise<void
     spinner.start('Scanning application...')
     const scanResult = await deploy.scan(appDir)
     if (!scanResult.success) {
-      spinner.fail(chalk.red(`Scan failed: ${scanResult.error.message}`))
-      return
+      throw new Error(`Scan failed: ${scanResult.error.message}`)
     }
     const scan = scanResult.data
     spinner.succeed(`Scanned: ${scan.appName} (SvelteKit: ${scan.isSvelteKit}, Services: ${scan.requiredServices.join(', ') || 'none'})`)
@@ -88,8 +86,7 @@ export async function deployCommand(options: DeployCommandOptions): Promise<void
     spinner.start('Initializing deploy module...')
     const initResult = await deploy.init(deployConfig)
     if (!initResult.success) {
-      spinner.fail(chalk.red(`Init failed: ${initResult.error.message}`))
-      return
+      throw new Error(`Init failed: ${initResult.error.message}`)
     }
     closeDeploy = () => deploy.close()
     spinner.succeed('Deploy module initialized')
@@ -103,8 +100,7 @@ export async function deployCommand(options: DeployCommandOptions): Promise<void
     })
 
     if (!deployResult.success) {
-      spinner.fail(chalk.red(`Deploy failed: ${deployResult.error.message}`))
-      return
+      throw new Error(`Deploy failed: ${deployResult.error.message}`)
     }
 
     spinner.succeed(chalk.green('Deployment successful!'))
@@ -128,6 +124,7 @@ export async function deployCommand(options: DeployCommandOptions): Promise<void
       }
       catch (error) {
         core.logger.error('Failed to close deploy module', { error })
+        process.exitCode = 1
       }
     }
   }
