@@ -5,7 +5,7 @@
  */
 
 import type { PageServerLoad } from './$types'
-import { listAdminRoles, listPermissionsGroupedByResource } from '$lib/server/iam-admin.js'
+import { listAdminRoles, listPermissionsGroupedByResource, requireAdminData } from '$lib/server/iam-admin.js'
 import { iam } from '@h-ai/iam'
 import { kit } from '@h-ai/kit'
 import { error } from '@sveltejs/kit'
@@ -42,12 +42,10 @@ export const load: PageServerLoad = async ({ url, locals }) => {
   const startIndex = (page - 1) * pageSize
   const pagedRoles = filteredRoles.slice(startIndex, startIndex + pageSize)
   // 只聚合当前页，一次查询获取真实成员数；失败不能显示成零。
-  const counts = await iam.authz.getRoleUserCounts(pagedRoles.map(role => role.id))
-  if (!counts.success)
-    throw error(503, { message: counts.error.message })
+  const counts = requireAdminData(await iam.authz.getRoleUserCounts(pagedRoles.map(role => role.id)))
 
   return {
-    roles: pagedRoles.map(role => ({ ...role, userCount: counts.data.get(role.id) ?? 0 })),
+    roles: pagedRoles.map(role => ({ ...role, userCount: counts.get(role.id) ?? 0 })),
     total,
     page,
     pageSize,

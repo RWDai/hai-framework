@@ -7,8 +7,9 @@
 import type { HaiResult, PaginatedResult } from '@h-ai/core'
 import type { Permission, PermissionQueryOptions, PermissionType, Role } from '@h-ai/iam'
 import * as m from '$lib/paraglide/messages.js'
-import { err, ok } from '@h-ai/core'
+import { core, err, ok } from '@h-ai/core'
 import { iam } from '@h-ai/iam'
+import { error } from '@sveltejs/kit'
 
 interface IamUserInput {
   id: string
@@ -101,26 +102,26 @@ const SEED_PERMISSION_CODES = new Set([
   'permission:delete',
 ])
 
+/** HTTP 应用读取边界：记录底层错误并中止响应，不返回伪造的空数据。 */
+export function requireAdminData<T>(result: HaiResult<T>): T {
+  if (!result.success) {
+    core.logger.error('Admin data read failed', { error: result.error })
+    throw error(503, { message: m.common_network_error() })
+  }
+  return result.data
+}
+
 async function listAllPages<T>(
   loadPage: (page: number, pageSize: number) => Promise<HaiResult<PaginatedResult<T>>>,
   pageSize = 200,
 ): Promise<T[]> {
-  const first = await loadPage(1, pageSize)
-  if (!first.success)
-    return []
-
-  const totalPages = Math.ceil(first.data.total / pageSize)
-  if (totalPages <= 1)
-    return first.data.items
-
-  const remaining = await Promise.all(
-    Array.from({ length: totalPages - 1 }, (_unused, index) => loadPage(index + 2, pageSize)),
-  )
-
-  return [
-    ...first.data.items,
-    ...remaining.flatMap(result => result.success ? result.data.items : []),
-  ]
+  const first = requireAdminData(await loadPage(1, pageSize))
+  const totalPages = Math.ceil(first.total / pageSize)
+  const items = [...first.items]
+  for (let page = 2; page <= totalPages; page++) {
+    items.push(...requireAdminData(await loadPage(page, pageSize)).items)
+  }
+  return items
 }
 
 function toPermissionWithSystem(permission: Permission): PermissionWithSystem {
@@ -130,7 +131,7 @@ function toPermissionWithSystem(permission: Permission): PermissionWithSystem {
   }
 }
 
-/** 批量把权限 code 转为权限 ID；不存在的 code 会被忽略。 */
+/** 批量把权限 code 转为权限 ID；不存在的 code 或查询失败时中止请求。 */
 export async function resolvePermissionIds(codes: string[] | undefined): Promise<string[] | undefined> {
   if (codes === undefined)
     return undefined
@@ -138,7 +139,11 @@ export async function resolvePermissionIds(codes: string[] | undefined): Promise
     return []
 
   const permissions = await Promise.all(codes.map(code => getAdminPermissionByCode(code)))
-  return permissions.filter((permission): permission is PermissionWithSystem => permission !== null).map(permission => permission.id)
+  return permissions.map((permission) => {
+    if (!permission)
+      throw error(400, { message: m.api_iam_permissions_not_found() })
+    return permission.id
+  })
 }
 
 /** 创建角色，并同步初始权限。 */
@@ -155,18 +160,21 @@ export async function createAdminRole(input: CreateRoleInput): Promise<HaiResult
   }
 
   const role = await getAdminRole(createResult.data.id)
-  return ok(role ?? { ...createResult.data, permissions: [] })
+  if (!role)
+    throw error(503, { message: m.common_network_error() })
+  return ok(role)
 }
 
 /** 根据 ID 获取带权限 code 的角色。 */
 export async function getAdminRole(id: string): Promise<RoleWithPermissions | null> {
   const result = await iam.authz.getRole(id)
-  if (!result.success || !result.data)
+  const data = requireAdminData(result)
+  if (!data)
     return null
 
   const permissionsResult = await iam.authz.getRolePermissions(id)
-  const permissions = permissionsResult.success ? permissionsResult.data.map(p => p.code) : []
-  return { ...result.data, permissions }
+  const permissions = requireAdminData(permissionsResult).map(p => p.code)
+  return { ...data, permissions }
 }
 
 /** 获取全部角色，并一次性带出权限 code。 */
@@ -177,7 +185,7 @@ export async function listAdminRoles(): Promise<RoleWithPermissions[]> {
 
   const roleIds = roles.map(role => role.id)
   const permissionsResult = await iam.authz.getRolePermissionsForMany(roleIds)
-  const permissionsMap = permissionsResult.success ? permissionsResult.data : new Map<string, Permission[]>()
+  const permissionsMap = requireAdminData(permissionsResult)
 
   return roles.map(role => ({
     ...role,
@@ -235,17 +243,19 @@ export async function createAdminPermission(input: CreatePermissionInput): Promi
 /** 根据 ID 获取权限。 */
 export async function getAdminPermission(id: string): Promise<PermissionWithSystem | null> {
   const result = await iam.authz.getPermission(id)
-  if (!result.success || !result.data)
+  const data = requireAdminData(result)
+  if (!data)
     return null
-  return toPermissionWithSystem(result.data)
+  return toPermissionWithSystem(data)
 }
 
 /** 根据 code 获取权限。 */
 export async function getAdminPermissionByCode(code: string): Promise<PermissionWithSystem | null> {
   const result = await iam.authz.getPermissionByCode(code)
-  if (!result.success || !result.data)
+  const data = requireAdminData(result)
+  if (!data)
     return null
-  return toPermissionWithSystem(result.data)
+  return toPermissionWithSystem(data)
 }
 
 /** 分页获取权限列表。 */
@@ -256,13 +266,11 @@ export async function listAdminPermissionsPage(options: PermissionQueryOptions):
   pageSize: number
 }> {
   const result = await iam.authz.getAllPermissions(options)
-  if (!result.success) {
-    return { items: [], total: 0, page: options.page ?? 1, pageSize: options.pageSize ?? 20 }
-  }
+  const data = requireAdminData(result)
 
   return {
-    items: result.data.items.map(toPermissionWithSystem),
-    total: result.data.total,
+    items: data.items.map(toPermissionWithSystem),
+    total: data.total,
     page: options.page ?? 1,
     pageSize: options.pageSize ?? 20,
   }
@@ -303,9 +311,10 @@ export function normalizeUniqueConstraintError(message: string | undefined, fall
 /** IAM 用户对象转后台用户列表响应格式（含角色 code）。 */
 export async function toIamUserResponse(user: IamUserInput) {
   const userResult = await iam.user.getUser(user.id, { include: ['roles'] })
-  const roles = userResult.success && userResult.data?.roles
-    ? userResult.data.roles.map(role => role.code)
-    : []
+  const loaded = requireAdminData(userResult)
+  if (!loaded)
+    throw error(503, { message: m.common_network_error() })
+  const roles = loaded.roles?.map(role => role.code) ?? []
 
   return {
     id: user.id,
@@ -323,9 +332,10 @@ export async function toIamUserResponse(user: IamUserInput) {
 /** IAM 用户对象转当前用户资料响应格式。 */
 export async function toIamProfileResponse(user: IamProfileInput) {
   const userResult = await iam.user.getUser(user.id, { include: ['roles'] })
-  const roles = userResult.success && userResult.data?.roles
-    ? userResult.data.roles.map(role => role.code)
-    : []
+  const loaded = requireAdminData(userResult)
+  if (!loaded)
+    throw error(503, { message: m.common_network_error() })
+  const roles = loaded.roles?.map(role => role.code) ?? []
 
   return {
     id: user.id,

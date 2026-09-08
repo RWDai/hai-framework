@@ -5,8 +5,8 @@
  */
 
 import type { PageServerLoad } from './$types'
+import { requireAdminData } from '$lib/server/iam-admin.js'
 import { audit } from '@h-ai/audit'
-import { core } from '@h-ai/core'
 import { iam } from '@h-ai/iam'
 
 export const load: PageServerLoad = async () => {
@@ -20,21 +20,14 @@ export const load: PageServerLoad = async () => {
     audit.getStats(7),
   ])
 
-  const userTotal = usersResult.success ? usersResult.data.total : 0
-  const activeUserTotal = activeUsersResult.success ? activeUsersResult.data.total : 0
-  const roleTotal = rolesResult.success ? rolesResult.data.total : 0
-  const permissionTotal = permissionsResult.success ? permissionsResult.data.total : 0
+  const userTotal = requireAdminData(usersResult).total
+  const activeUserTotal = requireAdminData(activeUsersResult).total
+  const roleTotal = requireAdminData(rolesResult).total
+  const permissionTotal = requireAdminData(permissionsResult).total
 
   // 审计数据
-  const recentActivity = recentAuditResult.success ? recentAuditResult.data.items : []
-  const auditStats = auditStatsResult.success ? auditStatsResult.data : []
-
-  if (!recentAuditResult.success) {
-    core.logger.warn('Failed to fetch recent audit logs', { error: recentAuditResult.error.message })
-  }
-  if (!auditStatsResult.success) {
-    core.logger.warn('Failed to fetch audit statistics', { error: auditStatsResult.error.message })
-  }
+  const recentActivity = requireAdminData(recentAuditResult).items
+  const auditStats = requireAdminData(auditStatsResult)
 
   return {
     stats: {

@@ -6,7 +6,7 @@
 
 import type { UserSortDirection, UserSortField } from '@h-ai/iam'
 import type { PageServerLoad } from './$types'
-import { listAdminRoles } from '$lib/server/iam-admin.js'
+import { listAdminRoles, requireAdminData } from '$lib/server/iam-admin.js'
 import { iam } from '@h-ai/iam'
 import { kit } from '@h-ai/kit'
 import { error } from '@sveltejs/kit'
@@ -116,8 +116,9 @@ export const load: PageServerLoad = async ({ url, locals }) => {
     listAdminRoles(),
     iam.user.listUsers({ page, pageSize, search, enabled, include: ['roles'], sortBy: userSort.sortBy, sortDirection: userSort.sortDirection }),
   ])
-  const iamUsers = usersResult.success ? usersResult.data.items : []
-  const total = usersResult.success ? usersResult.data.total : 0
+  const data = requireAdminData(usersResult)
+  const iamUsers = data.items
+  const total = data.total
 
   // 将 IAM 用户转为前端所需格式（角色已随 listUsers 返回）
   const usersWithRoles: UserData[] = iamUsers.map((user) => {
