@@ -188,7 +188,7 @@
 
 ### DEV-05｜P2｜本地发布验收应与 CI 的 E2E 范围一致
 
-- [ ] **任务**：复用同一发布验收入口，或给明确缩减范围的本地命令使用清晰名称。
+- [x] **任务**：复用同一发布验收入口，或给明确缩减范围的本地命令使用清晰名称。
 - **证据与影响〔静态确认〕**：[根 package.json](../package.json) 第 20 行 `test:release-local` 只跑 Admin E2E；[CI](../.github/workflows/ci.yml) 的 `pnpm e2e` 则包含 CLI 真实脚手架和多个应用。本地发布验收成功不等于跑过 CI 同范围的发布门禁。
 - **验收**：命令输出列出实际覆盖范围；完整本地发布入口覆盖与 CI 相同的 E2E 集合；快速入口可保留但名称/文档明确边界。仓库已有 `shellEmulator: true`，不把 `CI=true` 写法直接误报为 Windows 缺陷。
 - **建议负责人/工作量/依赖**：开发工具＋QA / S / DEV-02。
@@ -258,3 +258,5 @@
 - **ARCH-03**：按 tickInterval 刷新持久化定义，API 与获锁后的每次执行前重查，禁用/删除/改期或读取失败中断旧执行。两个真实进程共享 SQLite 与 Podman Redis 验证注册、参数更新、禁用、删除、一次性删除及同分钟仅一次成功；scheduler 59/59、typecheck、build 通过。README 和 CLI skill 明确刷新及本地配置边界。
 
 - **DEV-03**：部署各失败分支抛给 CLI 统一入口，进程以 1 退出；保留 finally 清理并传播清理异常。部署命令及入口 16/16、CLI typecheck/build 通过；构建后的真实 CLI 缺配置退出码为 1。CLI README 与 hai-deploy skill 同步。
+
+- **DEV-05**：本地发布验收最后一步改为根 pnpm e2e，与 CI 共用全部 6 个入口；dry-run 确认 CLI/admin/ai/corporate/h5/mobile 均在计划中。README 与 hai-ci skill 同步；完整执行保留到全部问题修复后的总验收。

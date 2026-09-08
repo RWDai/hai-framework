@@ -7,6 +7,8 @@ description: 设计和维护 hai-framework 应用仓库的 CI/CD、GitHub Action
 
 ## 能力契约
 
+框架仓库发布验收使用 `pnpm test:release-local`；其 E2E 与 CI 共用根 `pnpm e2e`，覆盖 CLI 和全部 Web 应用，不能缩减为仅 Admin Console。应用仓库应在自己的根 E2E 命令集中维护所有端到端入口。容器和原生验收须独立记录实际结果。
+
 | 项目 | 契约 |
 | --- | --- |
 | 能力 | 设计和维护 hai-framework 应用仓库的 CI/CD、GitHub Actions、质量门禁、secret scan 与 workflow 安全；当需求涉及 CI、GitHub Actions、required checks、泄漏扫描或 release workflow 编排时使用。 |

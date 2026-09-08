@@ -848,11 +848,16 @@ pnpm test
 # 仓库级 E2E（CLI 样板门禁 + Playwright 应用套件）
 pnpm e2e
 
+# 本地发布前全量验收（安装、类型、lint、构建、单测、完整 E2E）
+pnpm test:release-local
+
 # 只运行某个模块
 pnpm --filter @h-ai/reldb test
 ```
 
 ## 环境变量与配置
+
+本地发布验收和 CI 均复用根 `pnpm e2e`：覆盖 CLI 脚手架、Admin Console、AI Playground、Corporate Website、H5 和 Mobile Web。容器单测需要可用的 Docker/Podman；Web E2E 不代表桌面安装包或移动原生验收。
 
 仓库根目录提供统一样例：[`./.env.example`](./.env.example)。复制为 `.env` 后按需填写；各 `apps/*/.env.example` 仅补充应用侧差异化变量。
 
