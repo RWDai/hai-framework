@@ -195,7 +195,7 @@
 
 ### DEV-06｜P1｜构建缓存应区分实际影响产物的环境变量
 
-- [ ] **任务**：把构建变量加入 Turbo 的环境传递与缓存输入，核对客户端环境变量的框架自动推断范围。
+- [x] **任务**：把构建变量加入 Turbo 的环境传递与缓存输入，核对客户端环境变量的框架自动推断范围。
 - **证据与影响〔实测〕**：[packages/tsup.base.ts](../packages/tsup.base.ts) 第 12 行通过 `HAI_DOCKER_PROD_BUILD` 控制声明文件和 sourcemap；[turbo.json](../turbo.json) 未配置相应 `env`。本轮针对 Scheduler build 分别设置 false/true 执行 `turbo --dry=json`，两次 hash 均为 `15eb9662fcf6ec4d`，specified/configured/inferred 环境列表均为空。不同预期产物没有形成不同缓存键，在严格环境过滤下变量本身也没有声明传入。
 - **验收**：开发/容器构建分别验证变量传递、不同缓存 hash 和实际声明文件/sourcemap；同配置能命中缓存。客户端 `PUBLIC_*` 逐应用核对实际自动推断结果，不一概断言所有前缀都失效。
 - **建议负责人/工作量/依赖**：构建维护者 / M / DEV-02。
@@ -260,3 +260,5 @@
 - **DEV-03**：部署各失败分支抛给 CLI 统一入口，进程以 1 退出；保留 finally 清理并传播清理异常。部署命令及入口 16/16、CLI typecheck/build 通过；构建后的真实 CLI 缺配置退出码为 1。CLI README 与 hai-deploy skill 同步。
 
 - **DEV-05**：本地发布验收最后一步改为根 pnpm e2e，与 CI 共用全部 6 个入口；dry-run 确认 CLI/admin/ai/corporate/h5/mobile 均在计划中。README 与 hai-ci skill 同步；完整执行保留到全部问题修复后的总验收。
+
+- **DEV-06**：构建开关/客户端 PUBLIC-VITE-TAURI 变量和共享 tsup 配置纳入缓存输入；tsup 包增加不缓存的 dist 清理前置，避免缓存恢复残留另一模式文件。真实普通/生产构建及双向缓存命中产物验证通过（不同 hash、声明/sourcemap模式），已恢复普通构建；6 个应用 dry-run 均包含 PUBLIC_API_BASE。README、build/ci skills 与各 tsup 包脚本同步。

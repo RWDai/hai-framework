@@ -7,6 +7,8 @@ description: 设计和维护 hai-framework 应用仓库的 CI/CD、GitHub Action
 
 ## 能力契约
 
+Turbo 的 `build.env` 必须列出影响产物的变量；框架包含容器构建开关、E2E 构建模式及 PUBLIC/VITE/TAURI 前缀，共享 tsup 配置也纳入依赖。Docker/Testcontainers 连接变量通过测试任务透传。验证缓存须切换变量检查哈希和真实产物，不能只检查配置文本。
+
 框架仓库发布验收使用 `pnpm test:release-local`；其 E2E 与 CI 共用根 `pnpm e2e`，覆盖 CLI 和全部 Web 应用，不能缩减为仅 Admin Console。应用仓库应在自己的根 E2E 命令集中维护所有端到端入口。容器和原生验收须独立记录实际结果。
 
 | 项目 | 契约 |

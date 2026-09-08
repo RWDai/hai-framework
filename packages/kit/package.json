@@ -48,7 +48,8 @@
     "typecheck": "tsc --noEmit",
     "lint": "eslint .",
     "lint:fix": "eslint . --fix",
-    "clean": "rimraf dist .turbo"
+    "clean": "rimraf dist .turbo",
+    "build:clean": "rimraf dist"
   },
   "peerDependencies": {
     "@sveltejs/adapter-node": "catalog:",

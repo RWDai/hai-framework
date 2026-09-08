@@ -25,7 +25,8 @@
     "lint:fix": "eslint src/ --fix",
     "test": "vitest run",
     "test:watch": "vitest",
-    "test:coverage": "vitest run --coverage"
+    "test:coverage": "vitest run --coverage",
+    "build:clean": "rimraf dist"
   },
   "dependencies": {
     "@h-ai/core": "workspace:*",

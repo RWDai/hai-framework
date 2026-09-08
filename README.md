@@ -857,6 +857,10 @@ pnpm --filter @h-ai/reldb test
 
 ## 环境变量与配置
 
+Turbo 构建缓存显式纳入 `HAI_DOCKER_PROD_BUILD`、`HAI_E2E`、`PUBLIC_*`、`VITE_*`、`TAURI_*` 和共享 `packages/tsup.base.ts`。普通构建生成声明和 sourcemap，`HAI_DOCKER_PROD_BUILD=true` 的容器生产构建不生成；两者缓存不能互用。新增影响构建产物的环境变量时同步维护 `turbo.json` 的 `build.env`，不要把密钥放入客户端公开变量。
+
+tsup 包的 `build:clean` 是不缓存的前置任务，先删除本包 `dist` 再构建或恢复缓存，防止切换模式时保留另一模式的声明、sourcemap 或旧 chunk；同模式仍可命中构建缓存。
+
 本地发布验收和 CI 均复用根 `pnpm e2e`：覆盖 CLI 脚手架、Admin Console、AI Playground、Corporate Website、H5 和 Mobile Web。容器单测需要可用的 Docker/Podman；Web E2E 不代表桌面安装包或移动原生验收。
 
 仓库根目录提供统一样例：[`./.env.example`](./.env.example)。复制为 `.env` 后按需填写；各 `apps/*/.env.example` 仅补充应用侧差异化变量。

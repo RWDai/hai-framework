@@ -1,6 +1,9 @@
 {
   "$schema": "https://turbo.build/schema.json",
   "ui": "tui",
+  "globalDependencies": [
+    "packages/tsup.base.ts"
+  ],
   "tasks": {
     "paraglide:compile": {
       "dependsOn": [],
@@ -15,15 +18,27 @@
       "cache": true
     },
     "build": {
+      "env": [
+        "HAI_DOCKER_PROD_BUILD",
+        "HAI_E2E",
+        "PUBLIC_*",
+        "VITE_*",
+        "TAURI_*"
+      ],
       "dependsOn": [
         "^build",
-        "paraglide:compile"
+        "paraglide:compile",
+        "build:clean"
       ],
       "outputs": [
         "dist/**",
         ".svelte-kit/**"
       ],
       "cache": true
+    },
+    "build:clean": {
+      "cache": false,
+      "outputs": []
     },
     "dev": {
       "dependsOn": [
@@ -40,6 +55,12 @@
       "cache": false
     },
     "test": {
+      "passThroughEnv": [
+        "DOCKER_HOST",
+        "DOCKER_TLS_VERIFY",
+        "DOCKER_CERT_PATH",
+        "TESTCONTAINERS_*"
+      ],
       "dependsOn": [
         "^build"
       ],

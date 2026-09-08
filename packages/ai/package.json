@@ -38,7 +38,8 @@
     "model:list": "node models/build.mjs list",
     "model:prepare": "node models/build.mjs prepare",
     "model:build": "node models/build.mjs build",
-    "model:run": "node models/build.mjs run"
+    "model:run": "node models/build.mjs run",
+    "build:clean": "rimraf dist"
   },
   "dependencies": {
     "@a2a-js/sdk": "catalog:",

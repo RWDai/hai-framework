@@ -37,7 +37,8 @@
     "test:scaffold-gates": "pnpm build && node tests/run-scaffold-gates.mjs",
     "test:watch": "vitest",
     "test:coverage": "vitest run --coverage",
-    "clean": "rimraf dist .turbo"
+    "clean": "rimraf dist .turbo",
+    "build:clean": "rimraf dist"
   },
   "dependencies": {
     "@h-ai/core": "workspace:*",
