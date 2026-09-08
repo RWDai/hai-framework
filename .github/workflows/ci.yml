@@ -129,21 +129,6 @@ jobs:
       - name: Restore verified build artifacts
         run: tar -xzf "${{ runner.temp }}/release-build/build-artifacts.tgz"
 
-      - name: Sync versions
-        run: node scripts/sync-versions.mjs
-
-      - name: Commit version sync
-        run: |
-          git config user.name "github-actions[bot]"
-          git config user.email "github-actions[bot]@users.noreply.github.com"
-          git add -A
-          if git diff --staged --quiet; then
-            echo "No version changes to commit"
-          else
-            git commit -m "chore: sync version to v${{ needs.quality.outputs.version }} [skip ci]"
-            git push || { echo "Error: push failed, branch may have moved. Re-run release from latest main."; exit 1; }
-          fi
-
       - name: Generate release notes
         run: |
           VERSION="v${{ needs.quality.outputs.version }}"
