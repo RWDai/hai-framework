@@ -58,7 +58,7 @@
 
 ### ARCH-03｜P1｜解决调度任务定义在多节点间失效不同步
 
-- [ ] **任务**：使启用持久化的调度节点能够获知任务注册、修改、禁用和删除；明确刷新延迟与执行前校验策略。
+- [x] **任务**：使启用持久化的调度节点能够获知任务注册、修改、禁用和删除；明确刷新延迟与执行前校验策略。
 - **证据与影响〔静态确认〕**：[scheduler-functions.ts](../packages/scheduler/src/scheduler-functions.ts) 第 28 行保存进程内任务 Map，`loadPersistedTasks()` 只在 [init](../packages/scheduler/src/scheduler-main.ts) 第 108 行加载；[tick](../packages/scheduler/src/scheduler-runner.ts) 第 106 行直接遍历本地注册表。当前锁只协调同一分钟的任务竞争，不能同步任务定义。在 A 节点禁用/删除的任务仍可能被 B 节点按旧定义执行。
 - **验收**：两个真实进程共享数据库与 Redis，分别验证注册、改参数、禁用、删除、一次性任务删除；另一节点在约定时间内收敛，禁用后的过期定义不能继续产生业务执行。
 - **建议负责人/工作量/依赖**：Scheduler＋数据层维护者 / L / 先明确产品允许的刷新延迟。
@@ -254,3 +254,5 @@
 - **ARCH-05**：JS 在可终止的独立 Worker 中执行，主线程只解析语法；默认 30 秒，到期等待线程退出后才重试。同步循环、表达式循环和永不完成 Promise 均不阻塞主线程；scheduler 55/55、typecheck、build、构建产物真实 Worker smoke 通过。README、类型注释、CLI skill 同步。
 
 - **ARCH-06**：close 拒绝新任务，取消 HTTP、Worker 和退避等待，等待执行链退出后清理；Hook 通过事件 signal 协作取消。真实 HTTP 关闭、Worker、重试、迟到 Hook 与同 ID 重初始化隔离验证通过；scheduler 58/58、typecheck、build 通过。README、公共事件类型、CLI skill 同步。
+
+- **ARCH-03**：按 tickInterval 刷新持久化定义，API 与获锁后的每次执行前重查，禁用/删除/改期或读取失败中断旧执行。两个真实进程共享 SQLite 与 Podman Redis 验证注册、参数更新、禁用、删除、一次性删除及同分钟仅一次成功；scheduler 59/59、typecheck、build 通过。README 和 CLI skill 明确刷新及本地配置边界。

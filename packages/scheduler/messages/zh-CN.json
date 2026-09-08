@@ -5,6 +5,8 @@
   "scheduler_alreadyRunning": "定时任务调度器已在运行中",
   "scheduler_notRunning": "定时任务调度器未运行",
   "scheduler_closing": "调度器正在关闭，任务执行已取消",
+  "scheduler_definitionsChanged": "刷新期间任务定义已变化，请重试操作",
+  "scheduler_taskNoLongerDue": "任务 {taskId} 已删除、禁用或改变调度时间",
   "scheduler_taskNotFound": "任务未找到: {taskId}",
   "scheduler_taskAlreadyExists": "任务已存在: {taskId}",
   "scheduler_invalidCron": "无效的 cron 表达式: {expression}",

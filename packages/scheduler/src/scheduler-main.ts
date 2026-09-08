@@ -143,6 +143,13 @@ export const scheduler: SchedulerFunctions = {
     if (!currentConfig)
       return notInitialized.result()
 
+    const config = currentConfig
+    const refreshed = await loadPersistedTasks(taskRepo)
+    if (!refreshed.success)
+      return refreshed
+    if (currentConfig !== config)
+      return notInitialized.result()
+
     const registerResult = await registerTask(task, taskRepo)
     if (registerResult.success) {
       logger.info('Task registered', { taskId: task.id, taskName: task.name, cron: task.cron })
@@ -154,6 +161,13 @@ export const scheduler: SchedulerFunctions = {
     if (!currentConfig)
       return notInitialized.result()
 
+    const config = currentConfig
+    const refreshed = await loadPersistedTasks(taskRepo)
+    if (!refreshed.success)
+      return refreshed
+    if (currentConfig !== config)
+      return notInitialized.result()
+
     const unregisterResult = await unregisterTask(taskId, taskRepo)
     if (unregisterResult.success)
       logger.info('Task unregistered', { taskId })
@@ -163,6 +177,13 @@ export const scheduler: SchedulerFunctions = {
 
   async updateTask(taskId: string, updates: TaskUpdateInput): Promise<HaiResult<void>> {
     if (!currentConfig)
+      return notInitialized.result()
+
+    const config = currentConfig
+    const refreshed = await loadPersistedTasks(taskRepo)
+    if (!refreshed.success)
+      return refreshed
+    if (currentConfig !== config)
       return notInitialized.result()
 
     const updateResult = await updateRegisteredTask(taskId, updates, taskRepo)
@@ -206,6 +227,13 @@ export const scheduler: SchedulerFunctions = {
 
   async trigger(taskId: string, options?: TriggerTaskInput): Promise<HaiResult<TaskExecutionLog>> {
     if (!currentConfig)
+      return notInitialized.result()
+
+    const config = currentConfig
+    const refreshed = await loadPersistedTasks(taskRepo)
+    if (!refreshed.success)
+      return refreshed
+    if (currentConfig !== config)
       return notInitialized.result()
 
     const task = getTask(taskId)

@@ -20,7 +20,7 @@ import { core } from '@h-ai/core'
 
 import { waitWithSignal } from './scheduler-cancellation.js'
 import { executeTask, interruptTask } from './scheduler-executor.js'
-import { getCron, getHooks, getTaskRegistry, unregisterTask } from './scheduler-functions.js'
+import { getCron, getHooks, getTask, getTaskRegistry, loadPersistedTasks, unregisterTask } from './scheduler-functions.js'
 import { schedulerM } from './scheduler-i18n.js'
 
 const logger = core.logger.child({ module: 'scheduler', scope: 'runner' })
@@ -33,6 +33,7 @@ const activeRuns = new Map<Promise<TaskExecutionLog>, AbortController>()
 
 /** 调度器定时器 ID */
 let tickTimer: ReturnType<typeof setInterval> | null = null
+let tickInProgress = false
 
 /** 上一次检查的分钟标记（防止同一分钟内多次触发） */
 let lastTickMinute = -1
@@ -112,7 +113,26 @@ function resolveRetryBackoffMs(task: TaskDefinition, attempt: number): number {
 
 // ─── 调度循环与任务执行 ───
 
-function tick(): void {
+async function tick(): Promise<void> {
+  if (tickInProgress)
+    return
+  tickInProgress = true
+  try {
+    const refreshed = await loadPersistedTasks(currentTaskRepo)
+    if (!refreshed.success) {
+      logger.warn('Task definition refresh failed; skipping scheduling', { error: refreshed.error.message })
+      return
+    }
+    if (!tickTimer)
+      return
+    scheduleDueTasks()
+  }
+  finally {
+    tickInProgress = false
+  }
+}
+
+function scheduleDueTasks(): void {
   const now = new Date()
   const currentMinute = Math.floor(now.getTime() / 60000)
   if (currentMinute === lastTickMinute)
@@ -209,6 +229,18 @@ async function runTaskExecution(
         log = await interruptTask(task, trigger, schedulerM('scheduler_closing'), {}, signal)
         break
       }
+      const refreshed = await loadPersistedTasks(repository)
+      if (!refreshed.success) {
+        log = await interruptTask(task, trigger, refreshed.error.message, hooks, signal)
+        break
+      }
+      const latest = getTask(task.id)
+      const stillDue = minuteTimestamp === undefined || getCron(task.id)?.match(new Date(minuteTimestamp * 60000))
+      if (!latest || latest.enabled === false || !stillDue) {
+        log = await interruptTask(task, trigger, schedulerM('scheduler_taskNoLongerDue', { params: { taskId: task.id } }), hooks, signal)
+        break
+      }
+      task = latest
       log = await executeTask(task, trigger, hooks, signal)
       if (log.status !== 'failed')
         break
@@ -243,7 +275,7 @@ async function runTaskExecution(
     else
       logger.debug('Task execution succeeded', { taskId: task.id, duration: log.duration })
 
-    if (task.deleteAfterRun === true && !signal.aborted) {
+    if (task.deleteAfterRun === true && !signal.aborted && log.status !== 'interrupted') {
       const unregisterResult = await unregisterTask(task.id, repository)
       if (!unregisterResult.success) {
         logger.warn('Failed to auto-delete one-time task after run', {

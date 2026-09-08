@@ -5,6 +5,8 @@
   "scheduler_alreadyRunning": "Scheduler is already running",
   "scheduler_notRunning": "Scheduler is not running",
   "scheduler_closing": "Scheduler is closing; task execution cancelled",
+  "scheduler_definitionsChanged": "Task definitions changed during refresh; retry the operation",
+  "scheduler_taskNoLongerDue": "Task {taskId} was removed, disabled, or rescheduled",
   "scheduler_taskNotFound": "Task not found: {taskId}",
   "scheduler_taskAlreadyExists": "Task already exists: {taskId}",
   "scheduler_invalidCron": "Invalid cron expression: {expression}",

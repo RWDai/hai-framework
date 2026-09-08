@@ -30,6 +30,8 @@ const taskRegistry = new Map<string, TaskDefinition>()
 
 /** 解析后的 Cron 实例缓存（键：taskId） */
 const cronCache = new Map<string, Cron>()
+const persistedTaskIds = new Set<string>()
+let definitionEpoch = 0
 
 /** 当前全局生命周期回调 */
 let currentHooks: SchedulerTaskHooks = {}
@@ -49,10 +51,12 @@ export function hasTask(taskId: string): boolean {
 }
 
 export function setTask(taskId: string, task: TaskDefinition): void {
+  definitionEpoch++
   taskRegistry.set(taskId, task)
 }
 
 export function deleteTask(taskId: string): void {
+  definitionEpoch++
   taskRegistry.delete(taskId)
 }
 
@@ -87,6 +91,8 @@ export function getHooks(): Readonly<SchedulerTaskHooks> {
 // ─── 重置（供 close() 调用） ───
 
 export function resetTaskState(): void {
+  definitionEpoch++
+  persistedTaskIds.clear()
   taskRegistry.clear()
   cronCache.clear()
   currentHooks = {}
@@ -130,11 +136,39 @@ export async function loadPersistedTasks(taskRepo: SchedulerTaskRepository | nul
   if (!taskRepo)
     return ok(undefined)
 
+  const epoch = definitionEpoch
   const loadResult = await taskRepo.loadTasks()
   if (!loadResult.success)
     return loadResult
 
-  return loadConfigTasks(loadResult.data)
+  if (epoch !== definitionEpoch)
+    return err(HaiSchedulerError.EXECUTION_FAILED, schedulerM('scheduler_definitionsChanged'))
+
+  // 先完整验证快照再整体替换；保留仅由本节点配置声明的任务。
+  const nextTasks = new Map([...taskRegistry].filter(([id]) => !persistedTaskIds.has(id)))
+  const nextCrons = new Map([...cronCache].filter(([id]) => !persistedTaskIds.has(id)))
+  for (const task of loadResult.data) {
+    if (!task.id)
+      return err(HaiSchedulerError.CONFIG_ERROR, schedulerM('scheduler_taskIdEmpty'))
+    if (nextTasks.has(task.id))
+      return err(HaiSchedulerError.TASK_ALREADY_EXISTS, schedulerM('scheduler_taskAlreadyExists', { params: { taskId: task.id } }))
+    const cronResult = parseCronExpression(task.cron, task.timezone)
+    if (!cronResult.success)
+      return cronResult
+    nextTasks.set(task.id, task)
+    nextCrons.set(task.id, cronResult.data)
+  }
+  definitionEpoch++
+  taskRegistry.clear()
+  cronCache.clear()
+  persistedTaskIds.clear()
+  for (const [id, task] of nextTasks)
+    taskRegistry.set(id, task)
+  for (const [id, cron] of nextCrons)
+    cronCache.set(id, cron)
+  for (const task of loadResult.data)
+    persistedTaskIds.add(task.id)
+  return ok(undefined)
 }
 
 export async function loadConfigTasks(tasks: TaskDefinition[]): Promise<HaiResult<void>> {
@@ -198,6 +232,7 @@ export async function registerTask(
         saveResult.error,
       )
     }
+    persistedTaskIds.add(task.id)
   }
 
   return ok(undefined)
