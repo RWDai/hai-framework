@@ -452,6 +452,7 @@
   "modules_crypto_hash_result": "哈希结果：",
   "modules_crypto_encrypt_result": "加密结果：",
   "modules_crypto_hash_complete": "哈希计算完成",
-  "modules_crypto_encrypt_complete": "对称加密完成",
-  "modules_crypto_example_title": "使用示例"
+  "modules_crypto_encrypt_complete": "SM4 加密及解密校验完成",
+  "modules_crypto_example_title": "使用示例",
+  "modules_crypto_roundtrip": "解密还原（本次临时密钥不保存）"
 }

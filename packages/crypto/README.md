@@ -240,3 +240,5 @@ pnpm --filter @h-ai/crypto test
 ## License
 
 Apache-2.0
+
+管理端在线加密演示直接调用 Crypto SM3/SM4 API，SM4 使用随机临时密钥和 IV，并在显示成功前解密校验；密钥不保存。输入改变即清空旧结果，禁止用随机摘要或 Base64 伪装算法结果。

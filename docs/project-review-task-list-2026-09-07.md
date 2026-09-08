@@ -144,7 +144,7 @@
 
 ### USER-07｜P2｜加密演示不得用随机值表示算法执行成功
 
-- [ ] **任务**：演示按钮接入现有 Crypto API，或显著标成不可作为运算结果的模拟展示。
+- [x] **任务**：演示按钮接入现有 Crypto API，或显著标成不可作为运算结果的模拟展示。
 - **证据与影响〔静态确认〕**：[模块演示页](../apps/admin-console/src/routes/admin/modules/+page.svelte) 第 94 行 `mockHash()` 随机生成 64 位字符，第 104 行 `mockEncrypt()` 用 Base64 拼接随机后缀，两者都显示完成提示。输入不变时“哈希”仍变化，使用者无法用该页面验证真实算法。
 - **验收**：真实哈希同输入同结果，真实加密可解密；若保留模拟，按钮、结果和提示统一说明模拟。复用框架现有能力，不增加独立算法实现。
 - **建议负责人/工作量/依赖**：Admin＋Crypto 维护者 / S / USER-02。
@@ -272,3 +272,5 @@
 - **ARCH-08**：IAM createRole/updateRole 支持 permissionIds，在同一事务内保存资料、校验并完整替换权限；应用删除分步同步与补偿删除。真实 SQLite 第二次 INSERT 故障回滚、并发完整集合、权限单独清空及既有会话更新通过；含 PostgreSQL/Redis 的 RBAC 回归 90/90、IAM typecheck/build、管理端 check 0 错误通过。IAM/应用 README、双份 IAM skill、LLMS 同步。
 
 - **USER-04**：角色成员数改为当前页一次 COUNT(DISTINCT user_id) 聚合，失败不显示零；真实 SQLite/PostgreSQL 零、一、多用户与解除关联、损坏表失败回归通过。IAM 93/93、typecheck/build、管理端 check 0 错误通过；IAM/应用 README、双份 IAM skill、LLMS 同步。
+
+- **USER-07**：管理端演示改为真实 Crypto SM3 与随机临时密钥/IV 的 SM4；显示成功前解密校验，输入变化清空旧输出。真实 Chrome 已验证 abc 标准摘要、重复哈希、中文表情解密与随机密文、清空（1/1）；应用 check 0 错误，README、Crypto skill、中英文提示同步。

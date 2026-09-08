@@ -3,6 +3,7 @@
 -->
 <script lang='ts'>
   import * as m from '$lib/paraglide/messages'
+  import { crypto } from '@h-ai/crypto'
   import { toast } from '@h-ai/ui'
 
   let activeTab = $state('core')
@@ -91,24 +92,59 @@
   let hashResult = $state('')
   let encryptResult = $state('')
 
-  function mockHash() {
-    // 模拟哈希摘要
-    const hash = Array.from(
-      { length: 64 },
-      () => '0123456789abcdef'[Math.floor(Math.random() * 16)],
-    ).join('')
-    hashResult = hash
-    toast.success(m.modules_crypto_hash_complete())
-  }
+  let cryptoBusy = $state(false)
+  let decryptedResult = $state('')
 
-  function mockEncrypt() {
-    // 模拟对称加密输出
-    const encrypted = btoa(unescape(encodeURIComponent(plainText))).replace(/=/g, '') + Array.from(
-      { length: 8 },
-      () => '0123456789abcdef'[Math.floor(Math.random() * 16)],
-    ).join('')
-    encryptResult = encrypted
-    toast.success(m.modules_crypto_encrypt_complete())
+  $effect(() => {
+    void plainText
+    hashResult = ''
+    encryptResult = ''
+    decryptedResult = ''
+  })
+
+  async function runCrypto(operation: 'hash' | 'encrypt') {
+    const input = plainText
+    cryptoBusy = true
+    try {
+      if (!crypto.isInitialized) {
+        const initialized = await crypto.init()
+        if (!initialized.success) {
+          toast.error(m.common_error())
+          return
+        }
+      }
+      // 初始化等待期间输入变化时，不展示旧输入结果。
+      if (input !== plainText)
+        return
+      if (operation === 'hash') {
+        const result = crypto.hash.hash(input)
+        if (!result.success) {
+          toast.error(m.common_error())
+          return
+        }
+        hashResult = result.data
+        toast.success(m.modules_crypto_hash_complete())
+      }
+      else {
+        const key = crypto.symmetric.generateKey()
+        const encrypted = crypto.symmetric.encrypt(input, key)
+        if (!encrypted.success) {
+          toast.error(m.common_error())
+          return
+        }
+        const decrypted = crypto.symmetric.decrypt(encrypted.data, key)
+        if (!decrypted.success || decrypted.data !== input) {
+          toast.error(m.common_error())
+          return
+        }
+        encryptResult = JSON.stringify(encrypted.data)
+        decryptedResult = decrypted.data
+        toast.success(m.modules_crypto_encrypt_complete())
+      }
+    }
+    finally {
+      cryptoBusy = false
+    }
   }
 </script>
 
@@ -623,19 +659,21 @@ const result = await pipeline.run(rawContent)`}</code></pre>
             <Input id='crypto-plain' bind:value={plainText} placeholder={m.modules_crypto_input_placeholder()} />
           </div>
           <div class='flex gap-3'>
-            <Button variant='warning' onclick={mockHash}>{m.modules_crypto_hash_btn()}</Button>
-            <Button variant='success' onclick={mockEncrypt}>{m.modules_crypto_encrypt_btn()}</Button>
+            <Button variant='warning' disabled={cryptoBusy} onclick={() => runCrypto('hash')}>{m.modules_crypto_hash_btn()}</Button>
+            <Button variant='success' disabled={cryptoBusy} onclick={() => runCrypto('encrypt')}>{m.modules_crypto_encrypt_btn()}</Button>
           </div>
           {#if hashResult}
             <div class='p-3 bg-base-200 rounded-lg'>
               <p class='text-xs text-base-content/60 mb-1'>{m.modules_crypto_hash_result()}</p>
-              <code class='text-xs font-mono break-all'>{hashResult}</code>
+              <code data-testid='crypto-hash' class='text-xs font-mono break-all'>{hashResult}</code>
             </div>
           {/if}
           {#if encryptResult}
             <div class='p-3 bg-base-200 rounded-lg'>
               <p class='text-xs text-base-content/60 mb-1'>{m.modules_crypto_encrypt_result()}</p>
-              <code class='text-xs font-mono break-all'>{encryptResult}</code>
+              <code data-testid='crypto-cipher' class='text-xs font-mono break-all'>{encryptResult}</code>
+              <p class='text-xs mt-2'>{m.modules_crypto_roundtrip()}</p>
+              <code data-testid='crypto-decrypted'>{decryptedResult}</code>
             </div>
           {/if}
         </div>

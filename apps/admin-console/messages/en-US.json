@@ -452,6 +452,7 @@
   "modules_crypto_hash_result": "Hash Result:",
   "modules_crypto_encrypt_result": "Encryption Result:",
   "modules_crypto_hash_complete": "Hash calculation complete",
-  "modules_crypto_encrypt_complete": "Symmetric encryption complete",
-  "modules_crypto_example_title": "Usage Example"
+  "modules_crypto_encrypt_complete": "SM4 encryption and decryption verified",
+  "modules_crypto_example_title": "Usage Example",
+  "modules_crypto_roundtrip": "Decrypted plaintext (the temporary key is not stored)"
 }
