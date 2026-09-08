@@ -222,11 +222,6 @@ export async function deleteAdminRole(id: string): Promise<HaiResult<boolean>> {
   return ok(true)
 }
 
-/** 当前 IAM 暂未提供按角色统计用户数，页面保持 0 作为显式占位。 */
-export function getAdminRoleUserCount(_roleId: string): number {
-  return 0
-}
-
 /** 创建权限。 */
 export async function createAdminPermission(input: CreatePermissionInput): Promise<HaiResult<PermissionWithSystem>> {
   const result = await iam.authz.createPermission(input)

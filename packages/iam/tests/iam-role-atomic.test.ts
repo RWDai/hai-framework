@@ -15,6 +15,11 @@ describe('iam atomic role permission replacement', () => {
     await reldb.close()
   })
 
+  it('returns a failure instead of zero members when the relation table cannot be read', async () => {
+    expect((await reldb.sql.execute('DROP TABLE hai_iam_user_roles')).success).toBe(true)
+    expect(await iam.authz.getRoleUserCounts(['role-id'])).toMatchObject({ success: false })
+  })
+
   it('rolls back role creation when a requested permission does not exist', async () => {
     expect((await iam.authz.createRole({ code: 'atomic-create', name: 'atomic', permissionIds: ['missing'] })).success).toBe(false)
     expect(await iam.authz.getRoleByCode('atomic-create')).toMatchObject({ success: true, data: null })

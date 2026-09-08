@@ -200,6 +200,9 @@ export interface AuthzOperations {
    */
   getAllRoles: (options?: PaginationOptionsInput) => Promise<HaiResult<PaginatedResult<Role>>>
 
+  /** 批量统计角色成员数；成功时无关联返回 0，查询失败返回错误 */
+  getRoleUserCounts: (roleIds: string[]) => Promise<HaiResult<Map<string, number>>>
+
   /**
    * 更新角色
    *

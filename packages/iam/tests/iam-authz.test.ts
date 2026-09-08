@@ -412,6 +412,42 @@ describe('iam.authz', () => {
     // =========================================================================
 
     describe('用户-角色关联', () => {
+      it('批量统计应区分零、一、多名用户并反映解除关联', async () => {
+        const api = getIam()
+        const ids: string[] = []
+        for (let index = 0; index < 3; index++) {
+          const role = await api.authz.createRole({ code: `count_role_${index}`, name: '计数角色' })
+          expect(role.success).toBe(true)
+          if (!role.success)
+            return
+          ids.push(role.data.id)
+        }
+        const users: string[] = []
+        for (let index = 0; index < 2; index++) {
+          const user = await api.user.register({ username: `count_user_${index}`, password: TEST_PASSWORD })
+          expect(user.success).toBe(true)
+          if (!user.success)
+            return
+          users.push(user.data.user.id)
+          expect((await api.authz.assignRole(user.data.user.id, ids[2])).success).toBe(true)
+        }
+        expect((await api.authz.assignRole(users[0], ids[1])).success).toBe(true)
+        expect((await api.authz.assignRole(users[0], ids[2])).success).toBe(true)
+        const counts = await api.authz.getRoleUserCounts([...ids, ids[2]])
+        expect(counts.success).toBe(true)
+        if (counts.success)
+          expect([...counts.data.values()]).toEqual([0, 1, 2])
+        expect((await api.authz.removeRole(users[0], ids[2])).success).toBe(true)
+        const updated = await api.authz.getRoleUserCounts(ids)
+        expect(updated.success).toBe(true)
+        if (updated.success)
+          expect([...updated.data.values()]).toEqual([0, 1, 1])
+        const empty = await api.authz.getRoleUserCounts([])
+        expect(empty.success).toBe(true)
+        if (empty.success)
+          expect(empty.data.size).toBe(0)
+      })
+
       it('assignRole 应分配角色给用户', async () => {
         const regResult = await getIam().user.register({
           username: 'authz_assign_user',

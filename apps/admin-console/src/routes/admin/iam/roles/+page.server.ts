@@ -5,7 +5,8 @@
  */
 
 import type { PageServerLoad } from './$types'
-import { getAdminRoleUserCount, listAdminRoles, listPermissionsGroupedByResource } from '$lib/server/iam-admin.js'
+import { listAdminRoles, listPermissionsGroupedByResource } from '$lib/server/iam-admin.js'
+import { iam } from '@h-ai/iam'
 import { kit } from '@h-ai/kit'
 import { error } from '@sveltejs/kit'
 
@@ -24,16 +25,12 @@ export const load: PageServerLoad = async ({ url, locals }) => {
     listPermissionsGroupedByResource(),
   ])
 
-  // 为每个角色获取用户数
-  let rolesWithUserCount = roles.map(role => ({
-    ...role,
-    userCount: getAdminRoleUserCount(role.id),
-  }))
+  let filteredRoles = roles
 
   // 搜索过滤
   if (search) {
     const keyword = search.toLowerCase()
-    rolesWithUserCount = rolesWithUserCount.filter(
+    filteredRoles = filteredRoles.filter(
       r => r.name.toLowerCase().includes(keyword)
         || r.code.toLowerCase().includes(keyword)
         || (r.description ?? '').toLowerCase().includes(keyword),
@@ -41,12 +38,16 @@ export const load: PageServerLoad = async ({ url, locals }) => {
   }
 
   // 手动分页（角色数量通常不大，在应用层分页即可）
-  const total = rolesWithUserCount.length
+  const total = filteredRoles.length
   const startIndex = (page - 1) * pageSize
-  const pagedRoles = rolesWithUserCount.slice(startIndex, startIndex + pageSize)
+  const pagedRoles = filteredRoles.slice(startIndex, startIndex + pageSize)
+  // 只聚合当前页，一次查询获取真实成员数；失败不能显示成零。
+  const counts = await iam.authz.getRoleUserCounts(pagedRoles.map(role => role.id))
+  if (!counts.success)
+    throw error(503, { message: counts.error.message })
 
   return {
-    roles: pagedRoles,
+    roles: pagedRoles.map(role => ({ ...role, userCount: counts.data.get(role.id) ?? 0 })),
     total,
     page,
     pageSize,

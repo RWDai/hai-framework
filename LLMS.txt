@@ -345,6 +345,7 @@ await iam.authz.createPermission({ code: 'posts:write', name: '写文章', descr
 await iam.authz.assignRole(userId, roleId)
 // 角色资料和权限集合在同一事务保存；[] 清空，省略 permissionIds 保持不变
 await iam.authz.updateRole(roleId, { name: '编辑', permissionIds: [permissionId] })
+const roleCounts = await iam.authz.getRoleUserCounts([roleId]) // HaiResult<Map<string, number>>；失败不得填 0
 const allowed = await iam.authz.checkPermission(userId, 'posts:write')
 
 // --- 会话 (iam.session) ---

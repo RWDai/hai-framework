@@ -195,3 +195,5 @@ pnpm paraglide:compile # 编译 i18n 翻译文件
 ## 📄 许可证
 
 Apache License 2.0
+
+角色列表通过 `iam.authz.getRoleUserCounts(roleIds)` 一次聚合当前页角色的真实成员数，返回 `HaiResult<Map<string, number>>`。无关联为 0；查询失败显示加载错误，不生成零统计。

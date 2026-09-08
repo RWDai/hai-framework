@@ -81,6 +81,8 @@ export interface RolePermissionRepository {
  * 用户-角色关联存储接口
  */
 export interface UserRoleRepository {
+  /** 一次聚合查询多个角色的成员数 */
+  getUserCounts: (roleIds: string[]) => Promise<HaiResult<Map<string, number>>>
   /**
    * 分配角色给用户
    */
@@ -592,6 +594,22 @@ export async function createDbUserRoleRepository(
         )
       }
       return ok(result.data.map(r => r.user_id))
+    },
+
+    async getUserCounts(roleIds: string[]): Promise<HaiResult<Map<string, number>>> {
+      const ids = [...new Set(roleIds)]
+      const counts = new Map(ids.map(id => [id, 0]))
+      if (ids.length === 0)
+        return ok(counts)
+      const result = await reldb.sql.query<{ role_id: string, user_count: number | string }>(
+        `SELECT role_id, COUNT(DISTINCT user_id) AS user_count FROM ${USER_ROLE_TABLE} WHERE role_id IN (${ids.map(() => '?').join(', ')}) GROUP BY role_id`,
+        ids,
+      )
+      if (!result.success)
+        return err(HaiIamError.REPOSITORY_ERROR, iamM('iam_queryRoleFailed', { params: { message: result.error.message } }), result.error)
+      for (const row of result.data)
+        counts.set(row.role_id, Number(row.user_count))
+      return ok(counts)
     },
 
     async getRolesForUsers(userIds: string[]): Promise<HaiResult<Map<string, Role[]>>> {

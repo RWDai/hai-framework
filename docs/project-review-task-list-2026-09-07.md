@@ -123,7 +123,7 @@
 
 ### USER-04｜P2｜角色用户数展示真实统计或明确未知
 
-- [ ] **任务**：接入按角色聚合的用户计数；能力未就绪时展示未知/未提供，不能填 0。
+- [x] **任务**：接入按角色聚合的用户计数；能力未就绪时展示未知/未提供，不能填 0。
 - **证据与影响〔静态确认〕**：[iam-admin.ts](../apps/admin-console/src/lib/server/iam-admin.ts) 第 263 行 `getAdminRoleUserCount()` 固定返回 0；[角色页 loader](../apps/admin-console/src/routes/admin/iam/roles/+page.server.ts) 将其作为真实 `userCount`，[CRUD 定义](../apps/admin-console/src/lib/crud/admin-crud.ts) 第 207 行展示该列。管理员无法据此判断角色使用情况。
 - **验收**：无用户、一个用户、多个用户以及查询失败的状态可区分；数量来自批量聚合，避免逐角色查库。
 - **建议负责人/工作量/依赖**：Admin＋IAM 维护者 / M / 无。
@@ -270,3 +270,5 @@
 - **DEV-04**：统一 Node >=22.12.0：根、全部包/应用、11 个 package 模板、README、build/ci skills、共享 node22 编译目标与 CI 最低版本同步。真实 Node 22.12.0 下 Core 186/186、CLI 生成及 engines 断言 100/100 通过；当前 check:versions 通过。最低版本全仓验收由 CI 配置覆盖，本机最终全量使用原有 Node 24。
 
 - **ARCH-08**：IAM createRole/updateRole 支持 permissionIds，在同一事务内保存资料、校验并完整替换权限；应用删除分步同步与补偿删除。真实 SQLite 第二次 INSERT 故障回滚、并发完整集合、权限单独清空及既有会话更新通过；含 PostgreSQL/Redis 的 RBAC 回归 90/90、IAM typecheck/build、管理端 check 0 错误通过。IAM/应用 README、双份 IAM skill、LLMS 同步。
+
+- **USER-04**：角色成员数改为当前页一次 COUNT(DISTINCT user_id) 聚合，失败不显示零；真实 SQLite/PostgreSQL 零、一、多用户与解除关联、损坏表失败回归通过。IAM 93/93、typecheck/build、管理端 check 0 错误通过；IAM/应用 README、双份 IAM skill、LLMS 同步。

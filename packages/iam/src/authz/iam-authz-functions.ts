@@ -608,6 +608,10 @@ function createRbacManager(config: RbacManagerConfig): AuthzOperations {
       return ok(result.data)
     },
 
+    getRoleUserCounts(roleIds): Promise<HaiResult<Map<string, number>>> {
+      return userRoleRepository.getUserCounts(roleIds)
+    },
+
     async updateRole(roleId, data, tx?: DmlWithTxOperations): Promise<HaiResult<Role>> {
       const { permissionIds, ...metadata } = data
       // 使用调用方事务或创建新事务，保证 update+findById 原子性
