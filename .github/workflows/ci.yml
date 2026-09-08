@@ -27,25 +27,6 @@ jobs:
         with:
           fetch-depth: 0
 
-      - name: Check release tag existence
-        if: github.event_name == 'push'
-        id: check_version
-        run: |
-          CURRENT=$(node -p "require('./package.json').version")
-          VERSION_TAG="v${CURRENT}"
-
-          echo "Current version: $CURRENT"
-          echo "Checking tags: ${VERSION_TAG} (and fallback: ${CURRENT})"
-
-          if git rev-parse "${VERSION_TAG}" >/dev/null 2>&1 || git rev-parse "${CURRENT}" >/dev/null 2>&1; then
-            echo "Tag for current version already exists, skip release"
-            echo "changed=false" >> "$GITHUB_OUTPUT"
-          else
-            echo "No tag found for current version, trigger release after quality checks"
-            echo "changed=true" >> "$GITHUB_OUTPUT"
-            echo "version=$CURRENT" >> "$GITHUB_OUTPUT"
-          fi
-
       - uses: pnpm/action-setup@v6
 
       - uses: actions/setup-node@v6
@@ -55,6 +36,13 @@ jobs:
 
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
+
+      - name: Check release completion
+        if: github.event_name == 'push'
+        id: check_version
+        run: node scripts/release-status.mjs status
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
 
       - name: Typecheck
         run: pnpm typecheck
@@ -189,14 +177,41 @@ jobs:
           printf '%b' "$NOTES" > /tmp/release-notes.md
           cat /tmp/release-notes.md
 
+      - name: Verify npm authentication
+        run: npm whoami
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+
+      - name: Verify existing tag target
+        run: |
+          VERSION="v${{ needs.quality.outputs.version }}"
+          if git rev-parse "refs/tags/$VERSION" >/dev/null 2>&1; then
+            test "$(git rev-list -n 1 "$VERSION")" = "$(git rev-parse HEAD)" || {
+              echo "Existing release tag points to a different commit; rerun the original workflow or use a new version."
+              exit 1
+            }
+          fi
+
+      - name: Publish missing npm packages
+        run: |
+          node scripts/release-status.mjs missing > "$RUNNER_TEMP/missing-packages.txt"
+          while IFS= read -r pkg; do
+            [ -z "$pkg" ] && continue
+            (cd "$pkg" && pnpm publish --access public)
+          done < "$RUNNER_TEMP/missing-packages.txt"
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+
       - name: Create tag
         run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
           VERSION="v${{ needs.quality.outputs.version }}"
           if git rev-parse "$VERSION" >/dev/null 2>&1; then
             echo "Tag $VERSION already exists, skipping creation"
           else
             git tag -a "$VERSION" -m "Release $VERSION"
-            git push origin "$VERSION" || echo "Tag $VERSION already pushed to remote"
+            git push origin "$VERSION"
           fi
 
       - name: Create GitHub Release
@@ -207,47 +222,3 @@ jobs:
           body_path: /tmp/release-notes.md
           draft: false
           prerelease: false
-
-      - name: Verify npm authentication
-        run: npm whoami
-        env:
-          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
-
-      - name: Publish to npm
-        run: |
-          echo "Publishing public packages to npm..."
-          FAILED=0
-
-          for pkg in packages/*/; do
-            PKG_JSON="${pkg}package.json"
-            if [ ! -f "$PKG_JSON" ]; then
-              continue
-            fi
-
-            IS_PRIVATE=$(node -p "require('./${PKG_JSON}').private || false")
-            PKG_NAME=$(node -p "require('./${PKG_JSON}').name")
-            PKG_VERSION=$(node -p "require('./${PKG_JSON}').version")
-
-            if [ "$IS_PRIVATE" = "true" ]; then
-              echo "Skipping private package: $PKG_NAME"
-              continue
-            fi
-
-            if npm view "${PKG_NAME}@${PKG_VERSION}" version >/dev/null 2>&1; then
-              echo "Skipping already published package: ${PKG_NAME}@${PKG_VERSION}"
-              continue
-            fi
-
-            echo "Publishing $PKG_NAME..."
-            (cd "$pkg" && pnpm publish --access public) || {
-              echo "Error: Failed to publish ${PKG_NAME}@${PKG_VERSION}"
-              FAILED=1
-            }
-          done
-
-          if [ "$FAILED" -ne 0 ]; then
-            echo "One or more packages failed to publish"
-            exit 1
-          fi
-        env:
-          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}

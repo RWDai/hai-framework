@@ -859,6 +859,8 @@ pnpm --filter @h-ai/reldb test
 
 变更根版本后，先运行 `node scripts/sync-versions.mjs` 并提交模块、应用与 CLI 模板，再开始验收。根 `pnpm typecheck` 包含只读 `check:versions`，发现漂移即失败；发布阶段只使用已验证提交及其构建产物，不再同步版本或追加未经验证的提交。
 
+发布是否完成同时检查所有公开包的 npm 精确版本与 GitHub Release，已有 tag 不会屏蔽补发。npm 全部成功后才创建 tag 和 Release；部分失败应重跑原提交的 workflow，仅补发缺失包。查询 401/5xx 等异常直接失败，不能当作包不存在；已有 tag 指向其他提交时禁止继续补发，应重跑原提交或使用新版本。
+
 Turbo 构建缓存显式纳入 `HAI_DOCKER_PROD_BUILD`、`HAI_E2E`、`PUBLIC_*`、`VITE_*`、`TAURI_*` 和共享 `packages/tsup.base.ts`。普通构建生成声明和 sourcemap，`HAI_DOCKER_PROD_BUILD=true` 的容器生产构建不生成；两者缓存不能互用。新增影响构建产物的环境变量时同步维护 `turbo.json` 的 `build.env`，不要把密钥放入客户端公开变量。
 
 tsup 包的 `build:clean` 是不缓存的前置任务，先删除本包 `dist` 再构建或恢复缓存，防止切换模式时保留另一模式的声明、sourcemap 或旧 chunk；同模式仍可命中构建缓存。

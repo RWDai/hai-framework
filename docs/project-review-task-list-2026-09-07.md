@@ -160,7 +160,7 @@
 
 ### DEV-01｜P1｜修复发布部分失败后的重试阻断
 
-- [ ] **任务**：将版本 tag、Release 和所有公共包发布完成区分为独立状态，允许同版本补齐缺失包。
+- [x] **任务**：将版本 tag、Release 和所有公共包发布完成区分为独立状态，允许同版本补齐缺失包。
 - **证据与影响〔静态确认〕**：[CI](../.github/workflows/ci.yml) 第 207 行先创建 tag，第 217 行创建 Release，之后才做 npm 认证与发布；第 41 行又以 tag 已存在直接跳过整个 release。若首次只发布部分包，重新跑全部工作流会因 tag 存在而跳过补发。已有逐包 `npm view` 跳过逻辑因此不一定能被执行；单独重跑失败 job 是否可用不应成为唯一恢复路径。
 - **验收**：模拟第 N 个包失败和认证失败；完整重跑、失败 job 重跑都能补齐同版本，已发布包不覆盖，全部发布完成后才呈现完成状态。
 - **建议负责人/工作量/依赖**：发布维护者 / M / PM-02。
@@ -264,3 +264,5 @@
 - **DEV-06**：构建开关/客户端 PUBLIC-VITE-TAURI 变量和共享 tsup 配置纳入缓存输入；tsup 包增加不缓存的 dist 清理前置，避免缓存恢复残留另一模式文件。真实普通/生产构建及双向缓存命中产物验证通过（不同 hash、声明/sourcemap模式），已恢复普通构建；6 个应用 dry-run 均包含 PUBLIC_API_BASE。README、build/ci skills 与各 tsup 包脚本同步。
 
 - **DEV-02**：版本同步改为提交前显式执行，新增 --check 只读校验并纳入根 typecheck；release 删除同步和追加提交步骤，保留同提交构建产物。脚本真实子进程验证漂移不写入、同步后通过、损坏 JSON 失败（1/1），当前仓库 check:versions 与定向 lint 通过。README、ci/framework-sync skills 同步。
+
+- **DEV-01**：发布完成判定同时查询 npm 精确版本和 GitHub Release；仅补发缺失包，全部成功后再创建 tag/Release，查询异常及 tag 指向其他提交均失败。脚本回归 4/4、工作流 YAML 解析与步骤顺序校验、定向 lint 通过；未真实发布。README 与 ci skill 同步。

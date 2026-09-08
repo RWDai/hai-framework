@@ -7,6 +7,8 @@ description: 设计和维护 hai-framework 应用仓库的 CI/CD、GitHub Action
 
 ## 能力契约
 
+框架发布通过实际 npm 精确版本和 GitHub Release 判断完成，不能只看 tag。部分失败重跑原提交，只补发缺失包；npm 全部成功后再建 tag/Release。查询异常与 404 必须区分，tag 指向其他提交时停止补发，禁止将新源码混入旧版本。
+
 版本同步必须在提交和质量门禁之前完成。框架 `pnpm typecheck` 先执行只读 `check:versions`，发布 job 不得修改 package.json、模板或追加版本提交；发布源码与构建产物必须来自同一份已验收提交。
 
 Turbo 的 `build.env` 必须列出影响产物的变量；框架包含容器构建开关、E2E 构建模式及 PUBLIC/VITE/TAURI 前缀，共享 tsup 配置也纳入依赖。Docker/Testcontainers 连接变量通过测试任务透传。验证缓存须切换变量检查哈希和真实产物，不能只检查配置文本。
