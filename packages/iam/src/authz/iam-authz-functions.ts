@@ -322,6 +322,27 @@ function createRbacManager(config: RbacManagerConfig): AuthzOperations {
     }
   }
 
+  /** 在调用方事务中完整替换权限，任何一步失败由外层统一回滚。 */
+  async function replaceRolePermissions(roleId: string, permissionIds: string[], tx: DmlWithTxOperations): Promise<HaiResult<void>> {
+    const uniqueIds = [...new Set(permissionIds)]
+    for (const id of uniqueIds) {
+      const permission = await permissionRepository.findById(id, tx)
+      if (!permission.success)
+        return permission
+      if (!permission.data)
+        return err(HaiIamError.PERMISSION_NOT_FOUND, iamM('iam_permissionNotExist'))
+    }
+    const removed = await rolePermissionRepository.removeByRoleId(roleId, tx)
+    if (!removed.success)
+      return removed
+    for (const id of uniqueIds) {
+      const assigned = await rolePermissionRepository.assign(roleId, id, tx)
+      if (!assigned.success)
+        return assigned
+    }
+    return ok(undefined)
+  }
+
   return {
     async checkPermission(userId: string, permission: string): Promise<HaiResult<boolean>> {
       // RBAC 未启用时，所有权限检查直接放行
@@ -484,6 +505,7 @@ function createRbacManager(config: RbacManagerConfig): AuthzOperations {
     // ─── 角色管理 ───
 
     async createRole(role, tx?: DmlWithTxOperations): Promise<HaiResult<Role>> {
+      const { permissionIds, ...metadata } = role
       // 使用调用方事务或创建新事务，保证 create+findByCode 原子性
       const ownTx = !tx
       if (!tx) {
@@ -495,7 +517,7 @@ function createRbacManager(config: RbacManagerConfig): AuthzOperations {
       }
 
       try {
-        const createResult = await roleRepository.create(role, tx)
+        const createResult = await roleRepository.create(metadata, tx)
         if (!createResult.success) {
           if (ownTx)
             await tx.rollback()
@@ -516,6 +538,15 @@ function createRbacManager(config: RbacManagerConfig): AuthzOperations {
           if (ownTx)
             await tx.rollback()
           return err(HaiIamError.ROLE_NOT_FOUND, iamM('iam_roleNotExist'))
+        }
+
+        if (permissionIds !== undefined) {
+          const replaced = await replaceRolePermissions(createdResult.data.id, permissionIds, tx)
+          if (!replaced.success) {
+            if (ownTx)
+              await tx.rollback()
+            return replaced
+          }
         }
 
         if (ownTx) {
@@ -578,6 +609,7 @@ function createRbacManager(config: RbacManagerConfig): AuthzOperations {
     },
 
     async updateRole(roleId, data, tx?: DmlWithTxOperations): Promise<HaiResult<Role>> {
+      const { permissionIds, ...metadata } = data
       // 使用调用方事务或创建新事务，保证 update+findById 原子性
       const ownTx = !tx
       if (!tx) {
@@ -589,7 +621,9 @@ function createRbacManager(config: RbacManagerConfig): AuthzOperations {
       }
 
       try {
-        const updateResult = await roleRepository.updateById(roleId, data, tx)
+        const updateResult = Object.values(metadata).some(value => value !== undefined)
+          ? await roleRepository.updateById(roleId, metadata, tx)
+          : await roleRepository.touch(roleId, tx)
         if (!updateResult.success) {
           if (ownTx)
             await tx.rollback()
@@ -599,6 +633,15 @@ function createRbacManager(config: RbacManagerConfig): AuthzOperations {
           if (ownTx)
             await tx.rollback()
           return err(HaiIamError.ROLE_NOT_FOUND, iamM('iam_roleNotExist'))
+        }
+
+        if (permissionIds !== undefined) {
+          const replaced = await replaceRolePermissions(roleId, permissionIds, tx)
+          if (!replaced.success) {
+            if (ownTx)
+              await tx.rollback()
+            return replaced
+          }
         }
 
         const updatedResult = await roleRepository.findById(roleId, tx)

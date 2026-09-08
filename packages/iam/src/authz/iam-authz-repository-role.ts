@@ -6,7 +6,7 @@
  */
 
 import type { HaiResult } from '@h-ai/core'
-import type { DmlWithTxOperations, ReldbCrudFieldDefinition, ReldbCrudRepository } from '@h-ai/reldb'
+import type { DmlWithTxOperations, ExecuteResult, ReldbCrudFieldDefinition, ReldbCrudRepository } from '@h-ai/reldb'
 import type { Role } from './iam-authz-types.js'
 import { err, ok } from '@h-ai/core'
 import { BaseReldbCrudRepository, reldb } from '@h-ai/reldb'
@@ -19,6 +19,8 @@ import { HaiIamError } from '../iam-types.js'
  * 角色存储接口
  */
 export interface RoleRepository extends ReldbCrudRepository<Role> {
+  /** 权限单独更新时锁定角色行并推进更新时间，避免并发替换交错 */
+  touch: (roleId: string, tx: DmlWithTxOperations) => Promise<HaiResult<ExecuteResult>>
   /**
    * 根据代码获取角色
    */
@@ -130,6 +132,10 @@ export async function createDbRoleRepository(): Promise<RoleRepository> {
  * 继承 BaseReldbCrudRepository，提供按 code 查找角色的能力。
  */
 class DbRoleRepository extends BaseReldbCrudRepository<Role> implements RoleRepository {
+  async touch(roleId: string, tx: DmlWithTxOperations): Promise<HaiResult<ExecuteResult>> {
+    return tx.execute(`UPDATE ${TABLE_NAME} SET updated_at = ? WHERE id = ?`, [new Date().toISOString(), roleId])
+  }
+
   constructor() {
     super(reldb, {
       table: TABLE_NAME,

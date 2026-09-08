@@ -160,6 +160,8 @@ verifyToken(accessToken)
 
 #### 使用方式
 
+`authz.createRole({ ..., permissionIds })` 和 `authz.updateRole(id, { ..., permissionIds })` 在同一事务中保存角色资料和完整权限集合；任一步失败均回滚。`permissionIds: []` 清空权限，省略则保持不变；重复 ID 去重，未知权限失败。并发更新以最后提交的完整集合为准，不合并两个集合。自管事务提交后同步现有用户会话；使用外部事务时，调用方仍须在提交后同步会话。Admin Console 直接使用此接口，不再拆分更新或补偿删除角色。
+
 ```ts
 // 密码登录
 const result = await iam.auth.login({ identifier: 'admin', password: 'Password123' })

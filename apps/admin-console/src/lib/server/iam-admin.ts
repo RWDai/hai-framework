@@ -130,24 +130,6 @@ function toPermissionWithSystem(permission: Permission): PermissionWithSystem {
   }
 }
 
-async function syncRolePermissionIds(roleId: string, permissionIds: string[], failedMessage: string): Promise<HaiResult<void>> {
-  const currentResult = await iam.authz.getRolePermissions(roleId)
-  const currentIds = currentResult.success ? currentResult.data.map(p => p.id) : []
-  const toRemove = currentIds.filter(permId => !permissionIds.includes(permId))
-  const toAdd = permissionIds.filter(permId => !currentIds.includes(permId))
-
-  const results = await Promise.all([
-    ...toRemove.map(permId => iam.authz.removePermissionFromRole(roleId, permId)),
-    ...toAdd.map(permId => iam.authz.assignPermissionToRole(roleId, permId)),
-  ])
-  const failed = results.find(result => !result.success)
-  if (failed && !failed.success) {
-    return err({ code: 'iam.role.permission_sync_failed', message: `${failedMessage}: ${failed.error.message}` })
-  }
-
-  return ok(undefined)
-}
-
 /** 批量把权限 code 转为权限 ID；不存在的 code 会被忽略。 */
 export async function resolvePermissionIds(codes: string[] | undefined): Promise<string[] | undefined> {
   if (codes === undefined)
@@ -165,16 +147,11 @@ export async function createAdminRole(input: CreateRoleInput): Promise<HaiResult
     code: input.code,
     name: input.name,
     description: input.description,
+    permissionIds: input.permissions,
   })
 
   if (!createResult.success) {
     return err({ code: 'iam.role.create_failed', message: `${m.api_iam_roles_create_failed()}: ${createResult.error.message}` })
-  }
-
-  const syncResult = await syncRolePermissionIds(createResult.data.id, input.permissions ?? [], m.api_iam_roles_create_failed())
-  if (!syncResult.success) {
-    await iam.authz.deleteRole(createResult.data.id)
-    return err(syncResult.error)
   }
 
   const role = await getAdminRole(createResult.data.id)
@@ -221,18 +198,9 @@ export async function updateAdminRole(id: string, input: UpdateRoleInput): Promi
   if (editableInput.description !== undefined)
     updateData.description = editableInput.description
 
-  if (Object.keys(updateData).length > 0) {
-    const updateResult = await iam.authz.updateRole(id, updateData)
-    if (!updateResult.success) {
-      return err({ code: 'iam.role.update_failed', message: `${m.api_iam_roles_update_failed()}: ${updateResult.error.message}` })
-    }
-  }
-
-  if (editableInput.permissions !== undefined) {
-    const syncResult = await syncRolePermissionIds(id, editableInput.permissions, m.api_iam_roles_update_failed())
-    if (!syncResult.success)
-      return err(syncResult.error)
-  }
+  const updateResult = await iam.authz.updateRole(id, { ...updateData, permissionIds: editableInput.permissions })
+  if (!updateResult.success)
+    return err({ code: 'iam.role.update_failed', message: `${m.api_iam_roles_update_failed()}: ${updateResult.error.message}` })
 
   return ok(await getAdminRole(id))
 }

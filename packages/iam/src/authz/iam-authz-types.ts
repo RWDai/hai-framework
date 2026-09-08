@@ -174,7 +174,7 @@ export interface AuthzOperations {
    * @param role - 角色数据（code、name、description、isSystem）
    * @returns 成功返回创建的角色（含 id 和时间戳）
    */
-  createRole: (role: Omit<Role, 'id' | 'createdAt' | 'updatedAt'>, tx?: DmlWithTxOperations) => Promise<HaiResult<Role>>
+  createRole: (role: Omit<Role, 'id' | 'createdAt' | 'updatedAt'> & { permissionIds?: string[] }, tx?: DmlWithTxOperations) => Promise<HaiResult<Role>>
 
   /**
    * 获取角色
@@ -204,10 +204,10 @@ export interface AuthzOperations {
    * 更新角色
    *
    * @param roleId - 角色 ID
-   * @param data - 要更新的字段（name、description 等）
+   * @param data - 要更新的字段；permissionIds 在同一事务内全量替换，未传则保持权限不变
    * @returns 成功返回更新后的角色；角色不存在返回 ROLE_NOT_FOUND
    */
-  updateRole: (roleId: string, data: Partial<Omit<Role, 'id' | 'createdAt' | 'updatedAt'>>, tx?: DmlWithTxOperations) => Promise<HaiResult<Role>>
+  updateRole: (roleId: string, data: Partial<Omit<Role, 'id' | 'createdAt' | 'updatedAt'>> & { permissionIds?: string[] }, tx?: DmlWithTxOperations) => Promise<HaiResult<Role>>
 
   /**
    * 删除角色

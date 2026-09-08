@@ -93,7 +93,7 @@
 
 ### ARCH-08｜P1｜让角色权限替换具有完整成功或失败的语义
 
-- [ ] **任务**：权限查询失败先停止写入；权限增删与角色更新使用统一事务或可验证的原子替换能力。
+- [x] **任务**：权限查询失败先停止写入；权限增删与角色更新使用统一事务或可验证的原子替换能力。
 - **证据与影响〔静态确认〕**：[iam-admin.ts](../apps/admin-console/src/lib/server/iam-admin.ts) 第 133 行 `syncRolePermissionIds()` 把旧权限查询失败当空集合，再 `Promise.all` 并发增删；第 214 行更新角色信息后才同步权限。任何一个操作失败都可能留下部分更新；“撤销权限”未完整执行尤其难以察觉。
 - **验收**：旧权限读取失败时零写入；中途增删失败时恢复原权限集合和角色信息；并发编辑有冲突处理。覆盖服务端真实事务与权限缓存失效，不只 mock API 返回。
 - **建议负责人/工作量/依赖**：IAM＋Admin 维护者 / M / 与 USER-06 分开处理“写一致性”和“读失败呈现”。
@@ -268,3 +268,5 @@
 - **DEV-01**：发布完成判定同时查询 npm 精确版本和 GitHub Release；仅补发缺失包，全部成功后再创建 tag/Release，查询异常及 tag 指向其他提交均失败。脚本回归 4/4、工作流 YAML 解析与步骤顺序校验、定向 lint 通过；未真实发布。README 与 ci skill 同步。
 
 - **DEV-04**：统一 Node >=22.12.0：根、全部包/应用、11 个 package 模板、README、build/ci skills、共享 node22 编译目标与 CI 最低版本同步。真实 Node 22.12.0 下 Core 186/186、CLI 生成及 engines 断言 100/100 通过；当前 check:versions 通过。最低版本全仓验收由 CI 配置覆盖，本机最终全量使用原有 Node 24。
+
+- **ARCH-08**：IAM createRole/updateRole 支持 permissionIds，在同一事务内保存资料、校验并完整替换权限；应用删除分步同步与补偿删除。真实 SQLite 第二次 INSERT 故障回滚、并发完整集合、权限单独清空及既有会话更新通过；含 PostgreSQL/Redis 的 RBAC 回归 90/90、IAM typecheck/build、管理端 check 0 错误通过。IAM/应用 README、双份 IAM skill、LLMS 同步。
