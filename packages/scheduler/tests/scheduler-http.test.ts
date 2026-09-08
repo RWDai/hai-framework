@@ -51,6 +51,22 @@ describe('scheduler HTTP response boundaries', () => {
       const normal = await run('normal')
       expect(normal.status).toBe('success')
       expect(normal.result).toBe('完成 😀')
+      expect((await scheduler.register({
+        id: 'close-http',
+        name: 'close-http',
+        cron: '* * * * *',
+        handler: { kind: 'api', url: `http://127.0.0.1:${address.port}/stalled`, timeout: 60000 },
+      })).success).toBe(true)
+      const requestStarted = new Promise<void>(resolve => server.once('request', () => resolve()))
+      const pending = scheduler.trigger('close-http')
+      await requestStarted
+      await scheduler.close()
+      const cancelled = await pending
+      expect(cancelled.success).toBe(true)
+      if (cancelled.success) {
+        expect(cancelled.data.status).toBe('interrupted')
+        expect(cancelled.data.duration).toBeLessThan(2000)
+      }
     }
     finally {
       server.closeAllConnections()

@@ -11,6 +11,7 @@ import type { ExecutionStatus, SchedulerLogCleanupPolicy, SchedulerTaskContext, 
 
 import { core, err, ok } from '@h-ai/core'
 
+import { waitWithSignal } from './scheduler-cancellation.js'
 import { schedulerM } from './scheduler-i18n.js'
 import { compileJsTaskHandler } from './scheduler-js-compiler.js'
 import { HaiSchedulerError } from './scheduler-types.js'
@@ -63,7 +64,7 @@ async function notifyTaskStart(hooks: Readonly<SchedulerTaskHooks>, event: Sched
     return
 
   try {
-    await hooks.onTaskStart(event)
+    await waitWithSignal(() => hooks.onTaskStart!(event), event.signal)
   }
   catch (error) {
     logger.warn('Task start hook failed', { taskId: event.task.id, error })
@@ -75,7 +76,7 @@ async function notifyTaskInterrupted(hooks: Readonly<SchedulerTaskHooks>, event:
     return
 
   try {
-    await hooks.onTaskInterrupted(event)
+    await waitWithSignal(() => hooks.onTaskInterrupted!(event), event.signal)
   }
   catch (error) {
     logger.warn('Task interrupted hook failed', { taskId: event.task.id, error })
@@ -87,7 +88,7 @@ async function notifyTaskFinish(hooks: Readonly<SchedulerTaskHooks>, event: Sche
     return
 
   try {
-    await hooks.onTaskFinish(event)
+    await waitWithSignal(() => hooks.onTaskFinish!(event), event.signal)
   }
   catch (error) {
     logger.warn('Task finish hook failed', { taskId: event.task.id, error })
@@ -153,11 +154,12 @@ export async function interruptTask(
   trigger: TaskTriggerInfo,
   reason: string,
   hooks: Readonly<SchedulerTaskHooks>,
+  signal: AbortSignal = new AbortController().signal,
 ): Promise<TaskExecutionLog> {
   const startedAt = Date.now()
   const taskType = resolveTaskType(task, hooks)
 
-  await notifyTaskStart(hooks, { task, trigger, startedAt })
+  await notifyTaskStart(hooks, { task, trigger, startedAt, signal })
 
   const finishedAt = Date.now()
   const interruptedLog = await saveInterruptedTaskLog(task, trigger, reason, taskType, startedAt, finishedAt)
@@ -167,6 +169,7 @@ export async function interruptTask(
     trigger,
     startedAt,
     interruptedAt: finishedAt,
+    signal,
     reason,
   })
 
@@ -176,6 +179,7 @@ export async function interruptTask(
 export async function executeJsTask(
   task: TaskDefinition,
   context: SchedulerTaskContext,
+  signal: AbortSignal = new AbortController().signal,
 ): Promise<HaiResult<string | null>> {
   const handler = task.handler
   if (!handler || handler.kind !== 'js') {
@@ -190,7 +194,7 @@ export async function executeJsTask(
     return compileResult
 
   try {
-    const result = await compileResult.data(context)
+    const result = await compileResult.data(context, signal)
     return ok(result !== undefined ? JSON.stringify(result) : null)
   }
   catch (error) {
@@ -207,6 +211,7 @@ export async function executeJsTask(
 export async function executeApiTask(
   task: TaskDefinition,
   context: SchedulerTaskContext,
+  signal: AbortSignal = new AbortController().signal,
 ): Promise<HaiResult<string | null>> {
   const handler = task.handler
   if (!handler || handler.kind !== 'api') {
@@ -227,7 +232,7 @@ export async function executeApiTask(
         ...headers,
         ...(body !== undefined ? { 'Content-Type': 'application/json' } : {}),
       },
-      signal: controller.signal,
+      signal: AbortSignal.any([signal, controller.signal]),
       ...(body !== undefined ? { body: JSON.stringify(body) } : {}),
     })
 
@@ -292,6 +297,7 @@ async function executeHookTask(
   context: SchedulerTaskContext,
   hooks: Readonly<SchedulerTaskHooks>,
   startedAt: number,
+  signal: AbortSignal,
 ): Promise<HaiResult<string | null>> {
   if (!hooks.onTaskExecute) {
     return err(
@@ -305,10 +311,11 @@ async function executeHookTask(
     trigger: context.trigger,
     startedAt,
     context,
+    signal,
   }
 
   try {
-    const result = await hooks.onTaskExecute(executeEvent)
+    const result = await waitWithSignal(() => hooks.onTaskExecute!(executeEvent), signal)
     return ok(result !== undefined ? JSON.stringify(result) : null)
   }
   catch (error) {
@@ -326,26 +333,32 @@ export async function executeTask(
   task: TaskDefinition,
   trigger: TaskTriggerInfo,
   hooks: Readonly<SchedulerTaskHooks>,
+  signal: AbortSignal = new AbortController().signal,
 ): Promise<TaskExecutionLog> {
   const startedAt = Date.now()
   const taskType = resolveTaskType(task, hooks)
   const context = createTaskContext(task, trigger)
 
-  await notifyTaskStart(hooks, { task, trigger, startedAt })
+  await notifyTaskStart(hooks, { task, trigger, startedAt, signal })
 
   let executionResult: HaiResult<string | null>
   let shouldNotifyInterrupted = false
-  if (!task.handler) {
-    executionResult = await executeHookTask(task, context, hooks, startedAt)
+  if (signal.aborted) {
+    executionResult = err(HaiSchedulerError.EXECUTION_FAILED, schedulerM('scheduler_closing'))
+    shouldNotifyInterrupted = true
+  }
+  else if (!task.handler) {
+    executionResult = await executeHookTask(task, context, hooks, startedAt, signal)
     shouldNotifyInterrupted = !executionResult.success
   }
   else if (task.handler.kind === 'api') {
-    executionResult = await executeApiTask(task, context)
+    executionResult = await executeApiTask(task, context, signal)
   }
   else {
-    executionResult = await executeJsTask(task, context)
+    executionResult = await executeJsTask(task, context, signal)
   }
 
+  shouldNotifyInterrupted ||= signal.aborted
   const finishedAt = Date.now()
   const status: ExecutionStatus = executionResult.success
     ? 'success'
@@ -367,12 +380,13 @@ export async function executeTask(
       trigger,
       startedAt,
       interruptedAt: finishedAt,
+      signal,
       reason: executionResult.error.message,
     })
   }
 
   if (status !== 'interrupted')
-    await notifyTaskFinish(hooks, { task, trigger, startedAt, finishedAt, log })
+    await notifyTaskFinish(hooks, { task, trigger, startedAt, finishedAt, log, signal })
 
   return log
 }

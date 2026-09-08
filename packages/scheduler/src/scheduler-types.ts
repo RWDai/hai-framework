@@ -171,12 +171,14 @@ export interface SchedulerTaskContext {
 }
 
 /** 编译后的 JS 任务函数 */
-export type JsTaskHandler = (context: SchedulerTaskContext) => unknown | Promise<unknown>
+export type JsTaskHandler = (context: SchedulerTaskContext, signal?: AbortSignal) => unknown | Promise<unknown>
 
 // ─── 生命周期回调 ───
 
 /** 任务开始事件 */
 export interface SchedulerTaskStartEvent {
+  /** 关闭调度器时取消；回调必须停止后续副作用并释放资源 */
+  signal: AbortSignal
   /** 当前任务 */
   task: TaskDefinition
   /** 触发信息 */

@@ -79,7 +79,7 @@
 
 ### ARCH-06｜P1｜关闭调度器时处理在途任务和重试等待
 
-- [ ] **任务**：定义并实现关闭期间的等待/取消策略，隔离旧实例的完成回调、日志和注册表变更。
+- [x] **任务**：定义并实现关闭期间的等待/取消策略，隔离旧实例的完成回调、日志和注册表变更。
 - **证据与影响〔实测〕**：[scheduler-main.ts](../packages/scheduler/src/scheduler-main.ts) 第 263 行 `close()` 立即清空状态，不等待 `runTask()`；[runner](../packages/scheduler/src/scheduler-runner.ts) 仍可继续执行或重试。本轮保持一个 hook 任务等待，`close()` 返回且 `isInitialized=false` 后，释放 hook，该任务仍返回成功。若随后关闭 DB/cache 或重新初始化，同一在途执行会面对已变更的依赖和全局状态。
 - **验收**：覆盖执行中关闭、重试退避中关闭、关闭后立即 init；旧任务不写入新实例状态，依赖关闭顺序明确，关闭时间有界。
 - **建议负责人/工作量/依赖**：Scheduler 维护者 / M / ARCH-05。
@@ -252,3 +252,5 @@
 - **ARCH-07**：初始化加载改为 HaiResult 失败透传；无效配置、重复任务、损坏持久化数据或读取失败清空本轮状态。新增真实 SQLite 损坏表/数据与恢复测试，scheduler 52/52、typecheck 通过；README 和 CLI scheduler skill 同步。
 
 - **ARCH-05**：JS 在可终止的独立 Worker 中执行，主线程只解析语法；默认 30 秒，到期等待线程退出后才重试。同步循环、表达式循环和永不完成 Promise 均不阻塞主线程；scheduler 55/55、typecheck、build、构建产物真实 Worker smoke 通过。README、类型注释、CLI skill 同步。
+
+- **ARCH-06**：close 拒绝新任务，取消 HTTP、Worker 和退避等待，等待执行链退出后清理；Hook 通过事件 signal 协作取消。真实 HTTP 关闭、Worker、重试、迟到 Hook 与同 ID 重初始化隔离验证通过；scheduler 58/58、typecheck、build 通过。README、公共事件类型、CLI skill 同步。

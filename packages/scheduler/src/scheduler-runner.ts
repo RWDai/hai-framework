@@ -18,6 +18,7 @@ import type { TaskDefinition, TaskExecutionLog, TaskTriggerInfo } from './schedu
 import { cache } from '@h-ai/cache'
 import { core } from '@h-ai/core'
 
+import { waitWithSignal } from './scheduler-cancellation.js'
 import { executeTask, interruptTask } from './scheduler-executor.js'
 import { getCron, getHooks, getTaskRegistry, unregisterTask } from './scheduler-functions.js'
 import { schedulerM } from './scheduler-i18n.js'
@@ -28,6 +29,7 @@ const logger = core.logger.child({ module: 'scheduler', scope: 'runner' })
 
 /** 当前正在执行中的任务 ID 集合 */
 const runningTasks = new Set<string>()
+const activeRuns = new Map<Promise<TaskExecutionLog>, AbortController>()
 
 /** 调度器定时器 ID */
 let tickTimer: ReturnType<typeof setInterval> | null = null
@@ -77,11 +79,26 @@ export function resetRunner(): void {
   currentTaskRepo = null
 }
 
-async function sleep(ms: number): Promise<void> {
-  if (ms <= 0)
+async function sleep(ms: number, signal: AbortSignal): Promise<void> {
+  if (ms <= 0 || signal.aborted)
     return
+  await new Promise<void>((resolve) => {
+    let timer: ReturnType<typeof setTimeout> | undefined
+    const finish = () => {
+      clearTimeout(timer)
+      signal.removeEventListener('abort', finish)
+      resolve()
+    }
+    timer = setTimeout(finish, ms)
+    signal.addEventListener('abort', finish, { once: true })
+  })
+}
 
-  await new Promise(resolve => setTimeout(resolve, ms))
+export async function drainRunner(): Promise<void> {
+  stopTimer()
+  for (const controller of activeRuns.values())
+    controller.abort(new Error(schedulerM('scheduler_closing')))
+  await Promise.allSettled([...activeRuns.keys()])
 }
 
 function resolveRetryBackoffMs(task: TaskDefinition, attempt: number): number {
@@ -122,15 +139,32 @@ function tick(): void {
   }
 }
 
-export async function runTask(
+export function runTask(
   task: TaskDefinition,
   minuteTimestamp?: number,
   trigger: TaskTriggerInfo = { type: 'manual', source: null },
 ): Promise<TaskExecutionLog> {
+  const controller = new AbortController()
+  const run = runTaskExecution(task, minuteTimestamp, trigger, controller.signal)
+  activeRuns.set(run, controller)
+  void run.finally(() => activeRuns.delete(run)).catch(() => {})
+  return run
+}
+
+async function runTaskExecution(
+  task: TaskDefinition,
+  minuteTimestamp: number | undefined,
+  trigger: TaskTriggerInfo,
+  signal: AbortSignal,
+): Promise<TaskExecutionLog> {
+  const hooks = getHooks()
+  const repository = currentTaskRepo
   const lockKey = minuteTimestamp !== undefined ? `hai:scheduler:${task.id}:${minuteTimestamp}` : undefined
 
   if (cache.isInitialized && lockKey) {
-    const lockResult = await cache.lock.acquire(lockKey, { ttl: currentLockTtlSec, owner: currentNodeId })
+    const lockResult = await waitWithSignal(() => cache.lock.acquire(lockKey, { ttl: currentLockTtlSec, owner: currentNodeId }), signal).catch(() => null)
+    if (!lockResult)
+      return interruptTask(task, trigger, schedulerM('scheduler_closing'), {}, signal)
     if (!lockResult.success) {
       // lock 服务本身异常时 fail-close：中断任务，避免多节点重复执行
       logger.warn('Failed to acquire distributed lock, interrupting task', { taskId: task.id, error: lockResult.error.message })
@@ -138,7 +172,8 @@ export async function runTask(
         task,
         trigger,
         schedulerM('scheduler_lockAcquireFailed', { params: { taskId: task.id } }),
-        getHooks(),
+        hooks,
+        signal,
       )
     }
     if (!lockResult.data) {
@@ -147,7 +182,8 @@ export async function runTask(
         task,
         trigger,
         schedulerM('scheduler_lockAcquireFailed', { params: { taskId: task.id } }),
-        getHooks(),
+        hooks,
+        signal,
       )
     }
   }
@@ -157,7 +193,8 @@ export async function runTask(
       task,
       trigger,
       schedulerM('scheduler_taskRunning', { params: { taskId: task.id } }),
-      getHooks(),
+      hooks,
+      signal,
     )
   }
 
@@ -168,7 +205,11 @@ export async function runTask(
     let log: TaskExecutionLog | null = null
 
     for (let attempt = 1; attempt <= maxAttempts; attempt++) {
-      log = await executeTask(task, trigger, getHooks())
+      if (signal.aborted) {
+        log = await interruptTask(task, trigger, schedulerM('scheduler_closing'), {}, signal)
+        break
+      }
+      log = await executeTask(task, trigger, hooks, signal)
       if (log.status !== 'failed')
         break
 
@@ -182,7 +223,7 @@ export async function runTask(
         maxAttempts,
         backoffMs,
       })
-      await sleep(backoffMs)
+      await sleep(backoffMs, signal)
     }
 
     if (!log) {
@@ -190,7 +231,8 @@ export async function runTask(
         task,
         trigger,
         schedulerM('scheduler_executionFailed', { params: { error: 'Task execution produced no log' } }),
-        getHooks(),
+        hooks,
+        signal,
       )
     }
 
@@ -201,8 +243,8 @@ export async function runTask(
     else
       logger.debug('Task execution succeeded', { taskId: task.id, duration: log.duration })
 
-    if (task.deleteAfterRun === true) {
-      const unregisterResult = await unregisterTask(task.id, currentTaskRepo)
+    if (task.deleteAfterRun === true && !signal.aborted) {
+      const unregisterResult = await unregisterTask(task.id, repository)
       if (!unregisterResult.success) {
         logger.warn('Failed to auto-delete one-time task after run', {
           taskId: task.id,

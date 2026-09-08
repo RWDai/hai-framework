@@ -20,13 +20,14 @@ import { setLogRepository } from './scheduler-executor.js'
 import { clearHooks, getHooks, getTask, getTaskRegistry, loadConfigTasks, loadPersistedTasks, queryTaskLogs, registerTask, resetTaskState, setHooks, unregisterTask, updateRegisteredTask } from './scheduler-functions.js'
 import { schedulerM } from './scheduler-i18n.js'
 import { clearJsTaskHandlerCache } from './scheduler-js-compiler.js'
-import { configureLock, isTaskRunning, isTimerRunning, resetRunner, runTask, setTaskRepository, startTimer, stopTimer } from './scheduler-runner.js'
+import { configureLock, drainRunner, isTaskRunning, isTimerRunning, resetRunner, runTask, setTaskRepository, startTimer, stopTimer } from './scheduler-runner.js'
 import { HaiSchedulerError } from './scheduler-types.js'
 
 const logger = core.logger.child({ module: 'scheduler', scope: 'main' })
 
 let currentConfig: SchedulerConfig | null = null
 let initInProgress = false
+let closeInProgress: Promise<void> | null = null
 let taskRepo: SchedulerTaskRepository | null = null
 let logRepo: SchedulerLogRepository | null = null
 
@@ -83,6 +84,8 @@ export const scheduler: SchedulerFunctions = {
 
     initInProgress = true
     try {
+      if (closeInProgress)
+        await closeInProgress
       if (currentConfig) {
         logger.warn('Scheduler module is already initialized, reinitializing')
         await scheduler.close()
@@ -268,16 +271,29 @@ export const scheduler: SchedulerFunctions = {
   },
 
   async close(): Promise<void> {
+    if (closeInProgress)
+      return closeInProgress
+
     logger.info('Closing scheduler module')
-    stopTimer()
-    clearJsTaskHandlerCache()
-    resetTaskState()
-    resetRunner()
-    setLogRepository(null)
-    setTaskRepository(null)
+    // 先拒绝新任务，再等待旧执行链完全退出，最后释放共享状态。
     currentConfig = null
-    taskRepo = null
-    logRepo = null
-    logger.info('Scheduler module closed')
+    stopTimer()
+    closeInProgress = (async () => {
+      await drainRunner()
+      clearJsTaskHandlerCache()
+      resetTaskState()
+      resetRunner()
+      setLogRepository(null)
+      setTaskRepository(null)
+      taskRepo = null
+      logRepo = null
+      logger.info('Scheduler module closed')
+    })()
+    try {
+      await closeInProgress
+    }
+    finally {
+      closeInProgress = null
+    }
   },
 }

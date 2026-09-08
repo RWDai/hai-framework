@@ -40,7 +40,8 @@ export function compileJsTaskHandler(config: JsTaskConfig): HaiResult<JsTaskHand
     // 主线程仅解析语法，不执行表达式或任务函数。
     void new Script(`(${config.code})`)
 
-    const handler: JsTaskHandler = async (context) => {
+    const handler: JsTaskHandler = async (context, signal) => {
+      signal?.throwIfAborted()
       return await new Promise<unknown>((resolve, reject) => {
         const timeout = config.timeout ?? 30000
         const worker = new Worker(new URL('./scheduler-js-worker.js', import.meta.url), {
@@ -49,15 +50,18 @@ export function compileJsTaskHandler(config: JsTaskConfig): HaiResult<JsTaskHand
         })
         let settled = false
         let timer: ReturnType<typeof setTimeout> | undefined
-        const finish = (error?: Error, result?: unknown) => {
+        const aborted = () => finish(new Error(schedulerM('scheduler_closing')))
+        function finish(error?: Error, result?: unknown): void {
           if (settled)
             return
           settled = true
           clearTimeout(timer)
+          signal?.removeEventListener('abort', aborted)
           // 等待线程停止后才结束本次尝试，禁止超时任务与后续重试并行。
           void worker.terminate().then(() => error ? reject(error) : resolve(result), reject)
         }
         timer = setTimeout(() => finish(new Error(schedulerM('scheduler_jsTimedOut', { params: { timeout } }))), timeout)
+        signal?.addEventListener('abort', aborted, { once: true })
         worker.once('error', error => finish(error instanceof Error ? error : new Error(String(error))))
         worker.once('exit', code => finish(new Error(`JS worker exited before returning a result (${code})`)))
         worker.once('message', (message: { success: boolean, data?: unknown, message?: string }) => {
