@@ -1,0 +1,104 @@
+name: Native delivery
+
+on:
+  workflow_dispatch:
+    inputs:
+      api_base:
+        description: HTTPS acceptance API URL including /api/v1
+        required: true
+        type: string
+  pull_request:
+    paths:
+      - 'apps/desktop-app/**'
+      - 'apps/mobile-app/**'
+      - 'packages/**'
+      - pnpm-lock.yaml
+      - .github/workflows/native.yml
+
+permissions:
+  contents: read
+
+jobs:
+  package:
+    name: Native package (${{ matrix.platform }})
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - platform: windows
+            os: windows-latest
+          - platform: android
+            os: ubuntu-latest
+          - platform: ios
+            os: macos-latest
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 60
+    env:
+      # PR 仅验证打包；example.invalid 明确不代表真实网络验收。
+      PUBLIC_API_BASE: ${{ inputs.api_base || 'https://example.invalid/api/v1' }}
+      CI: true
+    steps:
+      - uses: actions/checkout@v6
+      - uses: pnpm/action-setup@v6
+      - uses: actions/setup-node@v6
+        with:
+          node-version: 22.12.0
+          cache: pnpm
+      - uses: actions/setup-java@v5
+        if: matrix.platform == 'android'
+        with:
+          distribution: temurin
+          java-version: '21'
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+      - name: Build framework dependencies
+        run: pnpm exec turbo run build --filter=desktop-app^... --filter=mobile-app^...
+      - name: Package Windows NSIS installer
+        if: matrix.platform == 'windows'
+        shell: pwsh
+        run: |
+          rustup show
+          $apiOrigin = ([uri]$env:PUBLIC_API_BASE).GetLeftPart([System.UriPartial]::Authority)
+          if (-not $apiOrigin.StartsWith('https://')) { throw 'Acceptance API must use HTTPS' }
+          $config = Get-Content apps/desktop-app/src-tauri/tauri.conf.json -Raw | ConvertFrom-Json
+          $config.version = (Get-Content apps/desktop-app/package.json -Raw | ConvertFrom-Json).version
+          $config.app.security.csp = $config.app.security.csp.Replace("connect-src 'self'", "connect-src 'self' $apiOrigin")
+          New-Item -ItemType Directory -Force .cache/native | Out-Null
+          $config | ConvertTo-Json -Depth 12 | Set-Content .cache/native/tauri.json
+          pnpm --filter desktop-app exec tauri build --config "$((Resolve-Path .cache/native/tauri.json).Path)"
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+      - name: Package Android debug APK
+        if: matrix.platform == 'android'
+        shell: bash
+        run: |
+          pnpm --filter mobile-app build
+          pnpm --filter mobile-app exec cap add android
+          pnpm --filter mobile-app exec cap sync android
+          cd apps/mobile-app/android
+          chmod +x gradlew
+          ./gradlew assembleDebug --no-daemon
+      - name: Package iOS simulator app
+        if: matrix.platform == 'ios'
+        shell: bash
+        run: |
+          xcodebuild -version
+          pnpm --filter mobile-app build
+          pnpm --filter mobile-app exec cap add ios --packagemanager SPM
+          pnpm --filter mobile-app exec cap sync ios
+          xcodebuild -project apps/mobile-app/ios/App/App.xcodeproj -scheme App -configuration Debug -sdk iphonesimulator -destination 'generic/platform=iOS Simulator' -derivedDataPath .cache/native/ios CODE_SIGNING_ALLOWED=NO build
+      - name: Record acceptance boundary
+        if: always()
+        shell: bash
+        run: |
+          mkdir -p .cache/native
+          printf 'commit=%s\nplatform=%s\nrun=%s\npackage_status=%s\ninstall_launch_auth_storage_network_upgrade=UNVERIFIED\n' '${{ github.sha }}' '${{ matrix.platform }}' '${{ github.run_id }}' '${{ job.status }}' > .cache/native/result.txt
+      - uses: actions/upload-artifact@v6
+        if: always()
+        with:
+          name: native-${{ matrix.platform }}-${{ github.sha }}
+          if-no-files-found: error
+          path: |
+            .cache/native/result.txt
+            apps/desktop-app/src-tauri/target/release/bundle/nsis/*-setup.exe
+            apps/mobile-app/android/app/build/outputs/apk/debug/*.apk
+            .cache/native/ios/Build/Products/Debug-iphonesimulator/App.app

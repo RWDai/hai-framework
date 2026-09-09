@@ -128,3 +128,5 @@ pnpm --filter desktop-app build
 ## License
 
 MIT
+
+原生交付使用独立 [构建与设备验收流程](../../docs/native-delivery-acceptance.md)，对应 `.github/workflows/native.yml`。Windows NSIS、Android debug APK、iOS Simulator App 分别在对应 OS 构建；工作流产物记录提交与打包状态，安装、认证/退出、重启、安全存储、真实 API 网络及升级另行记录，未验证项不视为通过。

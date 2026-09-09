@@ -199,7 +199,7 @@
 
 ### DEV-07｜P2｜补齐原生端交付验收，避免 Web 构建替代原生验收
 
-- [ ] **任务**：为计划支持的原生端制定独立打包、启动、认证/存储、网络与升级验证流程，并保存可复查结果。
+- [x] **任务**：为计划支持的原生端制定独立打包、启动、认证/存储、网络与升级验证流程，并保存可复查结果。
 - **证据与影响〔验收缺口〕**：[Desktop package](../apps/desktop-app/package.json) 的 `build` 仅执行 Vite，原生打包另有 `tauri:build`；[Mobile package](../apps/mobile-app/package.json) 也将 Web 构建和 Capacitor 命令分开。[CI](../.github/workflows/ci.yml) 只有 Ubuntu Node 质量任务，没有原生交付矩阵；[Desktop README](../apps/desktop-app/README.md) 明确不含 E2E。当前门禁不能证明原生安装包可用，不等同于已经证明原生功能损坏。
 - **验收**：先确定正式支持平台；在对应 OS/工具链上验证安装包启动、登录、退出、重启后的约定会话行为及实际 API 域名访问；Android/iOS 验证安全 TokenStore。缺少平台时标明未验证，不通过跳过测试制造绿灯。
 - **建议负责人/工作量/依赖**：客户端维护者＋QA / L / PM-01，受设备/平台条件约束。
@@ -281,3 +281,5 @@
 - **ARCH-04 补充（2026-09-09）**：新增 maxResponseBytes 正安全整数字节配置；真实 HTTP 测试验证默认超限、自定义 2 MiB 放行、中文表情按字节边界及非法配置不发请求。超时仍覆盖完整响应，README、skill 和双语错误同步。
 
 - **DEV-01 影响复查（2026-09-09）**：修正同步前查询旧包版本、同步提交改变标签目标、已完成发布后无法重试同步三项冲突。包发布前在工作区同步版本，npm 完成后标记原验收提交，发布完成后独立提交同步。恢复仅供发布脚本的测试入口，不恢复 DEV-02 版本前置门禁。6/6 回归包含实际临时 Git 远端验证重跑不重复提交、不覆盖后续源码；未实际向 npm/GitHub 发布。README 与 hai-ci skill 同步。
+
+- **DEV-07**：新增独立 Windows/Android/iOS 原生打包工作流与逐项设备验收记录规范，Tauri 版本引用应用 manifest；本机 Windows NSIS 构建/安装、真实桌面注册登录、加密 Echo、断网恢复、重启/退出和 alpha.15→alpha.53 覆盖升级通过。Android/iOS 与外部 HTTPS/签名交付未验证，明确保留边界。README、build/capacitor/ci skills 同步，完整证据见 native-delivery-acceptance.md。
