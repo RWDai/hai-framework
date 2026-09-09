@@ -14,7 +14,7 @@
   "scheduler_jsExecutionFailed": "JS 代码执行失败: {error}",
   "scheduler_jsTimedOut": "JS 任务执行超过 {timeout} 毫秒",
   "scheduler_apiExecutionFailed": "API 调用失败: {error}",
-  "scheduler_apiResponseTooLarge": "API 响应超过 1 MiB 上限",
+  "scheduler_apiResponseTooLarge": "API 响应超过 {maxResponseBytes} 字节上限",
   "scheduler_dbSaveFailed": "保存执行记录失败: {error}",
   "scheduler_dbNotInitialized": "数据库未初始化，无法保存执行记录",
   "scheduler_configError": "调度器配置校验失败：{error}",

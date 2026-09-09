@@ -67,8 +67,10 @@ export interface ApiTaskConfig {
   headers?: Record<string, string>
   /** 请求体（POST/PUT/PATCH 时使用） */
   body?: unknown
-  /** 请求及完整响应体读取的总超时，单位毫秒（默认 30000）；响应体最大 1 MiB */
+  /** 请求及完整响应体读取的总超时，单位毫秒（默认 30000） */
   timeout?: number
+  /** 响应体实际接收字节上限，必须为正安全整数（默认 1048576，即 1 MiB） */
+  maxResponseBytes?: number
 }
 
 /**

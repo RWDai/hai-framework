@@ -221,7 +221,9 @@ export async function executeApiTask(
     )
   }
 
-  const { url, method = 'GET', headers, body, timeout = 30000 } = handler
+  const { url, method = 'GET', headers, body, timeout = 30000, maxResponseBytes = 1024 * 1024 } = handler
+  if (!Number.isSafeInteger(maxResponseBytes) || maxResponseBytes <= 0)
+    return err(HaiSchedulerError.CONFIG_ERROR, schedulerM('scheduler_invalidHandlerConfig', { params: { taskId: task.id } }))
   const controller = new AbortController()
   const timer = setTimeout(() => controller.abort(), timeout)
 
@@ -237,7 +239,6 @@ export async function executeApiTask(
     })
 
     // 超时覆盖响应体读取；按实际字节累计，避免信任 Content-Length。
-    const maxResponseBytes = 1024 * 1024
     let receivedBytes = 0
     let responseText = ''
     const reader = response.body?.getReader()
@@ -251,7 +252,7 @@ export async function executeApiTask(
           receivedBytes += chunk.value.byteLength
           if (receivedBytes > maxResponseBytes) {
             controller.abort()
-            return err(HaiSchedulerError.API_EXECUTION_FAILED, schedulerM('scheduler_apiResponseTooLarge'))
+            return err(HaiSchedulerError.API_EXECUTION_FAILED, schedulerM('scheduler_apiResponseTooLarge', { params: { maxResponseBytes } }))
           }
           responseText += decoder.decode(chunk.value, { stream: true })
         }

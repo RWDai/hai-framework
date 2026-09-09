@@ -30,14 +30,16 @@ describe('scheduler HTTP response boundaries', () => {
     try {
       expect((await scheduler.init({ enableDb: false })).success).toBe(true)
       const address = server.address() as AddressInfo
-      const run = async (path: string) => {
+      let runIndex = 0
+      const run = async (path: string, maxResponseBytes?: number) => {
+        const id = `${path}-${runIndex++}`
         expect((await scheduler.register({
-          id: path,
+          id,
           name: path,
           cron: '* * * * *',
-          handler: { kind: 'api', url: `http://127.0.0.1:${address.port}/${path}`, timeout: 250 },
+          handler: { kind: 'api', url: `http://127.0.0.1:${address.port}/${path}`, timeout: 250, maxResponseBytes },
         })).success).toBe(true)
-        const result = await scheduler.trigger(path)
+        const result = await scheduler.trigger(id)
         expect(result.success).toBe(true)
         if (!result.success)
           throw new Error(result.error.message)
@@ -47,6 +49,18 @@ describe('scheduler HTTP response boundaries', () => {
       expect(stalled.status).toBe('failed')
       expect(stalled.duration).toBeLessThan(2000)
       expect((await run('large')).status).toBe('failed')
+      const large = await run('large', 2 * 1024 * 1024)
+      expect(large.status).toBe('success')
+      expect(large.result).toHaveLength(1024 * 1024 + 1)
+      expect((await run('normal', 11)).status).toBe('success')
+      expect((await run('normal', 10)).status).toBe('failed')
+      let invalidRequests = 0
+      const onRequest = () => invalidRequests++
+      server.on('request', onRequest)
+      for (const limit of [0, -1, 1.5, Number.NaN, Number.POSITIVE_INFINITY, Number.MAX_SAFE_INTEGER + 1])
+        expect((await run('normal', limit)).status).toBe('failed')
+      server.off('request', onRequest)
+      expect(invalidRequests).toBe(0)
       expect((await run('error')).status).toBe('failed')
       const normal = await run('normal')
       expect(normal.status).toBe('success')

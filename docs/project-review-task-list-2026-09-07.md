@@ -247,7 +247,7 @@
 
 - **USER-05**：角色 code 改用 core.id.generate，移除名称清洗函数；同步应用 README、仓库及 CLI IAM skill。真实 Playwright API 连续创建中文、表情、同名及大小写相近角色，全部成功且标识唯一（1/1）；预览构建通过。
 
-- **ARCH-04**：API 超时覆盖完整响应流，按实际字节限制 1 MiB；通过本地 HTTP 服务验证响应头后停滞、超限、503 及中文表情成功响应。scheduler 47/47 测试、typecheck、build 通过，README 与 CLI scheduler skill 同步。
+- **ARCH-04**：API 超时覆盖完整响应流，由 ApiTaskConfig.maxResponseBytes 配置实际字节上限（默认 1 MiB）；通过本地 HTTP 服务验证响应头后停滞、超限、503 及中文表情成功响应。scheduler 47/47 测试、typecheck、build 通过，README 与 CLI scheduler skill 同步。
 
 - **ARCH-07**：初始化加载改为 HaiResult 失败透传；无效配置、重复任务、损坏持久化数据或读取失败清空本轮状态。新增真实 SQLite 损坏表/数据与恢复测试，scheduler 52/52、typecheck 通过；README 和 CLI scheduler skill 同步。
 
@@ -262,7 +262,6 @@
 - **DEV-05**：本地发布验收最后一步改为根 pnpm e2e，与 CI 共用全部 6 个入口；dry-run 确认 CLI/admin/ai/corporate/h5/mobile 均在计划中。README 与 hai-ci skill 同步；完整执行保留到全部问题修复后的总验收。
 
 - **DEV-06**：构建开关/客户端 PUBLIC-VITE-TAURI 变量和共享 tsup 配置纳入缓存输入；tsup 包增加不缓存的 dist 清理前置，避免缓存恢复残留另一模式文件。真实普通/生产构建及双向缓存命中产物验证通过（不同 hash、声明/sourcemap模式），已恢复普通构建；6 个应用 dry-run 均包含 PUBLIC_API_BASE。README、build/ci skills 与各 tsup 包脚本同步。
-
 
 - **DEV-01**：发布完成判定同时查询 npm 精确版本和 GitHub Release；仅补发缺失包，全部成功后再创建 tag/Release，查询异常及 tag 指向其他提交均失败。脚本回归 4/4、工作流 YAML 解析与步骤顺序校验、定向 lint 通过；未真实发布。README 与 ci skill 同步。
 
@@ -281,3 +280,5 @@
 - **ARCH-01**：开通结果改为 Core 可消费的 JSON 对象/数组覆盖：PostgreSQL、Redis TLS、R2 S3、Resend SMTP 和短信渠道；父节点覆盖仍经 Schema 校验，构建与运行使用同配置，Storage 生成器/环境样例改为扁平契约。真实 createProject 后注入模拟开通结果，经 Core 和各模块 Schema 验证通过；CLI 配置 17/17、Deploy 71/71、Core 配置 29/29、CLI/Deploy typecheck/build 通过。README、Core/Deploy skills、LLMS、模板同步；未创建或连接真实云资源。
 
 - **ARCH-02**：ProvisionResult 标记新建/复用，失败通过 getDeployRecovery 返回项目、阶段、平台项目 ID 与不含凭证的资源清单；已知部分资源保留 ID，结果未知要求先核对，不自动删除。数据库成功缓存失败、已建无连接信息、真实构建 exit 7、同名重试复用回归通过；Deploy 75/75、typecheck/build、CLI 11/11 通过。README、Deploy skill、LLMS 与 CLI 恢复展示同步。
+
+- **ARCH-04 补充（2026-09-09）**：新增 maxResponseBytes 正安全整数字节配置；真实 HTTP 测试验证默认超限、自定义 2 MiB 放行、中文表情按字节边界及非法配置不发请求。超时仍覆盖完整响应，README、skill 和双语错误同步。
