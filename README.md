@@ -859,7 +859,6 @@ pnpm --filter @h-ai/reldb test
 
 框架开发、CLI 及服务端运行统一要求 Node.js ≥ 22.12.0；该下限与当前 Vite/Svelte 插件的 Node 22 要求一致。包和脚手架均声明此 engines，共享 tsup 使用 node22 目标，CI 在最低版本 22.12.0 执行完整门禁；Docker 模板使用 Node 22 系列。
 
-
 发布是否完成同时检查所有公开包的 npm 精确版本与 GitHub Release，已有 tag 不会屏蔽补发。npm 全部成功后才创建 tag 和 Release；部分失败应重跑原提交的 workflow，仅补发缺失包。查询 401/5xx 等异常直接失败，不能当作包不存在；已有 tag 指向其他提交时禁止继续补发，应重跑原提交或使用新版本。
 
 Turbo 构建缓存显式纳入 `HAI_DOCKER_PROD_BUILD`、`HAI_E2E`、`PUBLIC_*`、`VITE_*`、`TAURI_*` 和共享 `packages/tsup.base.ts`。普通构建生成声明和 sourcemap，`HAI_DOCKER_PROD_BUILD=true` 的容器生产构建不生成；两者缓存不能互用。新增影响构建产物的环境变量时同步维护 `turbo.json` 的 `build.env`，不要把密钥放入客户端公开变量。
@@ -912,3 +911,5 @@ tsup 包的 `build:clean` 是不缓存的前置任务，先删除本包 `dist` �
 ## 许可证
 
 [Apache-2.0](./LICENSE)
+
+发布完成判定始终查询根版本的 npm 包；发布 job 同步包版本但不提交，标签固定指向触发质量验收的源码提交。发布成功后由独立 job 提交版本同步；完整重跑即使无需补发也会执行同步，远端已存在相同内容时成功退出，分支有新源码时拒绝覆盖并要求从最新 main 重跑。

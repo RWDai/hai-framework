@@ -129,3 +129,5 @@ pnpm build
 - `hai-pr-review` — PR 审查与 AI Review 策略
 - `hai-deploy` — 应用部署与云服务开通
 - `hai-framework-sync` — hai-framework 与应用仓库同步策略
+
+发布完成判定始终查询根版本的 npm 包；发布 job 同步包版本但不提交，标签固定指向触发质量验收的源码提交。发布成功后由独立 job 提交版本同步；完整重跑即使无需补发也会执行同步，远端已存在相同内容时成功退出，分支有新源码时拒绝覆盖并要求从最新 main 重跑。

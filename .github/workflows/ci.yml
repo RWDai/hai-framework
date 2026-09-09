@@ -120,18 +120,6 @@ jobs:
       - name: Sync versions
         run: node scripts/sync-versions.mjs
 
-      - name: Commit version sync
-        run: |
-          git config user.name "github-actions[bot]"
-          git config user.email "github-actions[bot]@users.noreply.github.com"
-          git add -A
-          if git diff --staged --quiet; then
-            echo "No version changes to commit"
-          else
-            git commit -m "chore: sync version to v${{ needs.quality.outputs.version }} [skip ci]"
-            git push || { echo "Error: push failed, branch may have moved. Re-run release from latest main."; exit 1; }
-          fi
-
       - name: Generate release notes
         run: |
           VERSION="v${{ needs.quality.outputs.version }}"
@@ -212,7 +200,7 @@ jobs:
           node scripts/release-status.mjs missing > "$RUNNER_TEMP/missing-packages.txt"
           while IFS= read -r pkg; do
             [ -z "$pkg" ] && continue
-            (cd "$pkg" && pnpm publish --access public)
+            (cd "$pkg" && pnpm publish --access public --no-git-checks)
           done < "$RUNNER_TEMP/missing-packages.txt"
         env:
           NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
@@ -237,3 +225,26 @@ jobs:
           body_path: /tmp/release-notes.md
           draft: false
           prerelease: false
+
+  sync_versions:
+    name: Commit versions after release
+    needs: [quality, release]
+    if: >-
+      always() && github.event_name == 'push' && needs.quality.result == 'success' &&
+      (needs.release.result == 'success' || needs.release.result == 'skipped')
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-node@v6
+        with:
+          node-version: 22.12.0
+      - name: Sync and commit versions
+        run: |
+          node scripts/sync-versions.mjs
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          node scripts/release-status.mjs commit-sync
