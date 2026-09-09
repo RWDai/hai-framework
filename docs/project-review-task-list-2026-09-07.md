@@ -167,7 +167,7 @@
 
 ### DEV-02｜P2｜版本同步应发生在发布验证之前
 
-- [x] **任务**：在质量门禁之前完成版本/模板同步，或验证同步无变更；发布打包对象与验证对象保持一致。
+- [ ] **任务**：在质量门禁之前完成版本/模板同步，或验证同步无变更；发布打包对象与验证对象保持一致。
 - **证据与影响〔静态确认〕**：[CI](../.github/workflows/ci.yml) 第 129 行恢复已验证产物后，第 132 行运行 [sync-versions.mjs](../scripts/sync-versions.mjs)，该脚本会修改 packages/apps manifest 与 CLI 模板并提交；之后没有重新执行生成项目门禁。当维护者只更新根版本时，测试通过的模板与最终分发模板不是同一份。
 - **验收**：仅修改根版本的场景能正确同步并在验证前完成；记录验证提交及包清单，最终 tarball 中的 manifest、模板、依赖版本与已验证结果相符。
 - **建议负责人/工作量/依赖**：发布＋CLI 维护者 / M / DEV-01。
@@ -263,7 +263,6 @@
 
 - **DEV-06**：构建开关/客户端 PUBLIC-VITE-TAURI 变量和共享 tsup 配置纳入缓存输入；tsup 包增加不缓存的 dist 清理前置，避免缓存恢复残留另一模式文件。真实普通/生产构建及双向缓存命中产物验证通过（不同 hash、声明/sourcemap模式），已恢复普通构建；6 个应用 dry-run 均包含 PUBLIC_API_BASE。README、build/ci skills 与各 tsup 包脚本同步。
 
-- **DEV-02**：版本同步改为提交前显式执行，新增 --check 只读校验并纳入根 typecheck；release 删除同步和追加提交步骤，保留同提交构建产物。脚本真实子进程验证漂移不写入、同步后通过、损坏 JSON 失败（1/1），当前仓库 check:versions 与定向 lint 通过。README、ci/framework-sync skills 同步。
 
 - **DEV-01**：发布完成判定同时查询 npm 精确版本和 GitHub Release；仅补发缺失包，全部成功后再创建 tag/Release，查询异常及 tag 指向其他提交均失败。脚本回归 4/4、工作流 YAML 解析与步骤顺序校验、定向 lint 通过；未真实发布。README 与 ci skill 同步。
 

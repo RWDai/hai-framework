@@ -859,7 +859,6 @@ pnpm --filter @h-ai/reldb test
 
 框架开发、CLI 及服务端运行统一要求 Node.js ≥ 22.12.0；该下限与当前 Vite/Svelte 插件的 Node 22 要求一致。包和脚手架均声明此 engines，共享 tsup 使用 node22 目标，CI 在最低版本 22.12.0 执行完整门禁；Docker 模板使用 Node 22 系列。
 
-变更根版本后，先运行 `node scripts/sync-versions.mjs` 并提交模块、应用与 CLI 模板，再开始验收。根 `pnpm typecheck` 包含只读 `check:versions`，发现漂移即失败；发布阶段只使用已验证提交及其构建产物，不再同步版本或追加未经验证的提交。
 
 发布是否完成同时检查所有公开包的 npm 精确版本与 GitHub Release，已有 tag 不会屏蔽补发。npm 全部成功后才创建 tag 和 Release；部分失败应重跑原提交的 workflow，仅补发缺失包。查询 401/5xx 等异常直接失败，不能当作包不存在；已有 tag 指向其他提交时禁止继续补发，应重跑原提交或使用新版本。
 

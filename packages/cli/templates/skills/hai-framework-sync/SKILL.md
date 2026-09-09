@@ -7,8 +7,6 @@ description: 管理 hai-framework 与应用仓库之间的依赖、技能模板�
 
 ## 能力契约
 
-框架升级根版本后先执行 `node scripts/sync-versions.mjs`，提交所有变更后再验收。CI 使用 `--check` 拒绝模块、应用及 CLI 模板版本漂移，不在发布阶段补改版本；不可发布未经门禁覆盖的同步结果。
-
 | 项目 | 契约 |
 | --- | --- |
 | 能力 | 管理 hai-framework 与应用仓库之间的依赖、技能模板、Copilot/AGENTS 指令和本地联调同步；当需求涉及 hai-framework 源头修改、skills 同步、framework:use:local、framework:watch、版本漂移或双仓 PR 时使用。 |
