@@ -145,7 +145,8 @@ function scheduleDueTasks(): void {
       continue
 
     const cron = getCron(taskId)
-    if (!cron || !cron.match(now))
+    // 调度与分布式锁均以分钟为槽；启动或 tick 延迟不应因当前秒数漏掉该分钟。
+    if (!cron || !cron.match(new Date(currentMinute * 60000)))
       continue
 
     if (runningTasks.has(taskId)) {

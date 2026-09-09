@@ -208,3 +208,5 @@ await scheduler.init({
 | `HaiSchedulerError.LOCK_ACQUIRE_FAILED` | `hai:scheduler:029` | 锁获取失败 |
 | `HaiSchedulerError.JS_COMPILE_FAILED` | `hai:scheduler:030` | JS 编译失败 |
 | `HaiSchedulerError.HOOK_EXECUTION_FAILED` | `hai:scheduler:031` | Hook 执行失败 |
+
+调度循环按分钟时间点匹配 cron，并用同一分钟生成分布式锁键；启动或 tick 延迟至非零秒仍检查当前分钟，同一轮运行不会每个 tick 重复调度。

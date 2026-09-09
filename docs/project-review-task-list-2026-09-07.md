@@ -283,3 +283,5 @@
 - **DEV-01 影响复查（2026-09-09）**：修正同步前查询旧包版本、同步提交改变标签目标、已完成发布后无法重试同步三项冲突。包发布前在工作区同步版本，npm 完成后标记原验收提交，发布完成后独立提交同步。恢复仅供发布脚本的测试入口，不恢复 DEV-02 版本前置门禁。6/6 回归包含实际临时 Git 远端验证重跑不重复提交、不覆盖后续源码；未实际向 npm/GitHub 发布。README 与 hai-ci skill 同步。
 
 - **DEV-07**：新增独立 Windows/Android/iOS 原生打包工作流与逐项设备验收记录规范，Tauri 版本引用应用 manifest；本机 Windows NSIS 构建/安装、真实桌面注册登录、加密 Echo、断网恢复、重启/退出和 alpha.15→alpha.53 覆盖升级通过。Android/iOS 与外部 HTTPS/签名交付未验证，明确保留边界。README、build/capacitor/ci skills 同步，完整证据见 native-delivery-acceptance.md。
+
+- **ARCH-03 全量验收补充（2026-09-09）**：首次全量测试发现非零秒启动时 cron 匹配失败，但分钟槽已经标记，导致当前分钟漏调度。调度匹配改用与锁及执行前复核一致的分钟时间点；0/39 秒启动、同分钟不重复与真实双进程回归通过，Scheduler 60/60。README 与 scheduler skill 同步。此前全量运行中止于该项，最终验收在修正后继续执行。

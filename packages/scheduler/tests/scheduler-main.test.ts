@@ -49,9 +49,9 @@ describe('scheduler', () => {
   })
 
   describe('register / trigger', () => {
-    it('应按任务 timezone 匹配定时触发', async () => {
+    it.each([0, 39])('应按任务 timezone 匹配定时触发，启动秒数为 %i', async (second) => {
       vi.useFakeTimers()
-      vi.setSystemTime(new Date(Date.UTC(2026, 4, 25, 4, 5, 0)))
+      vi.setSystemTime(new Date(Date.UTC(2026, 4, 25, 4, 5, second)))
       const onTaskExecute = vi.fn((event: SchedulerTaskExecuteEvent) => ({ taskId: event.task.id }))
 
       await scheduler.init({ enableDb: false, tickInterval: 100, hooks: { onTaskExecute } })
@@ -83,6 +83,8 @@ describe('scheduler', () => {
       }
       expect(firstCall[0].task.timezone).toBe('Asia/Shanghai')
       expect(firstCall[0].task.id).toBe('timezone-task')
+      await vi.advanceTimersByTimeAsync(1000)
+      expect(onTaskExecute).toHaveBeenCalledTimes(1)
       scheduler.stop()
       vi.useRealTimers()
     })

@@ -214,3 +214,5 @@ pnpm --filter @h-ai/scheduler test
 ## License
 
 Apache-2.0
+
+调度循环按分钟时间点匹配 cron，并用同一分钟生成分布式锁键；启动或 tick 延迟至非零秒仍检查当前分钟，同一轮运行不会每个 tick 重复调度。
