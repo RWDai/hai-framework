@@ -4,14 +4,14 @@
 
 ## 支持的服务
 
-| 服务类型 | Provisioner   | 说明                  |
-| -------- | ------------- | --------------------- |
-| 部署     | Vercel        | SvelteKit 应用部署    |
-| 数据库   | Neon          | PostgreSQL Serverless |
-| 缓存     | Upstash       | Redis REST API        |
-| 存储     | Cloudflare R2 | S3 兼容对象存储       |
-| 邮件     | Resend        | 邮件发送 API          |
-| 短信     | 阿里云        | 阿里云短信服务        |
+| 服务类型 | Provisioner   | 说明                   |
+| -------- | ------------- | ---------------------- |
+| 部署     | Vercel        | SvelteKit 应用部署     |
+| 数据库   | Neon          | PostgreSQL Serverless  |
+| 缓存     | Upstash       | Redis TCP + TLS        |
+| 存储     | Cloudflare R2 | S3 兼容对象存储        |
+| 邮件     | Resend        | SMTP（已有已验证域名） |
+| 短信     | 阿里云        | 阿里云短信服务         |
 
 ## 快速开始
 
@@ -115,3 +115,7 @@ pnpm --filter @h-ai/deploy test
 ## License
 
 Apache-2.0
+
+云资源配置消费：Neon 输出 HAI_DB（PostgreSQL JSON），Upstash 输出 HAI_CACHE（Redis rediss URL JSON），R2 输出 HAI_STORAGE（扁平 S3 JSON）。邮件/短信输出 HAI_REACH_PROVIDERS 数组，deployApp 合并两个渠道并保留 YAML 中的消息模板；此覆盖替换原 providers 数组。Core 支持整体对象/数组覆盖，父节点优先于叶子变量，仍执行 Schema 校验；构建子进程与目标运行环境使用相同开通结果。R2 必须提供已有 S3 accessKeyId/secretAccessKey；Resend 必须提供已验证域名的 from；阿里云必须提供已审核 signName/模板。应用须已有相应\_db/\_cache/\_storage/\_reach.yml 并在启动时加载，网络客户端需要 Node 运行时。
+
+配置依据：[Upstash TLS](https://upstash.com/docs/redis/features/security)、[Resend SMTP](https://resend.com/docs/send-with-smtp)。确定性验收真实生成应用并通过 Core 和各模块 Schema；未创建云资源、未发送邮件/短信，不能据此声称云端写入读取已验收。

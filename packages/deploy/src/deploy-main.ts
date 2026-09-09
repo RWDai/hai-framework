@@ -324,9 +324,14 @@ export const deploy: DeployFunctions = {
       if (!provResults.success) {
         return err(provResults.error)
       }
+      const reachProviders: unknown[] = []
       for (const prov of provResults.data) {
+        if (prov.envVars.HAI_REACH_PROVIDERS)
+          reachProviders.push(...JSON.parse(prov.envVars.HAI_REACH_PROVIDERS) as unknown[])
         allEnvVars = { ...allEnvVars, ...prov.envVars }
       }
+      if (reachProviders.length > 0)
+        allEnvVars.HAI_REACH_PROVIDERS = JSON.stringify(reachProviders)
     }
 
     // 4. 创建平台项目
@@ -346,7 +351,7 @@ export const deploy: DeployFunctions = {
 
     // 6. 构建应用
     if (!options?.skipBuild) {
-      const buildResult = buildApp(appDir, scan.buildCommand)
+      const buildResult = buildApp(appDir, scan.buildCommand, allEnvVars)
       if (!buildResult.success) {
         return err(buildResult.error)
       }

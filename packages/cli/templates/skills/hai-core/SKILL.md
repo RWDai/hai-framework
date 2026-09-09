@@ -572,3 +572,5 @@ logger.debug('Data fetched', { count: items.length })
 | `redact` 字段脱敏 | 不生效（需手动脱敏） |
 | `fatal` 级别 | 映射为 `console.error`（带 `[FATAL]` 前缀） |
 | context 输出 | JSON 字符串追加到消息末尾（非结构化对象） |
+
+云资源配置消费：Neon 输出 HAI_DB（PostgreSQL JSON），Upstash 输出 HAI_CACHE（Redis rediss URL JSON），R2 输出 HAI_STORAGE（扁平 S3 JSON）。邮件/短信输出 HAI_REACH_PROVIDERS 数组，deployApp 合并两个渠道并保留 YAML 中的消息模板；此覆盖替换原 providers 数组。Core 支持整体对象/数组覆盖，父节点优先于叶子变量，仍执行 Schema 校验；构建子进程与目标运行环境使用相同开通结果。R2 必须提供已有 S3 accessKeyId/secretAccessKey；Resend 必须提供已验证域名的 from；阿里云必须提供已审核 signName/模板。应用须已有相应 _db/_cache/_storage/_reach.yml 并在启动时加载，网络客户端需要 Node 运行时。

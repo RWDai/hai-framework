@@ -38,8 +38,8 @@ describe('generateConfigFile', () => {
 
   it('应该生成 storage 配置', () => {
     const content = generateConfigFile('storage')
-    expect(content).toContain('defaultProvider: local')
-    expect(content).toContain('providers:')
+    expect(content).toContain('type: local')
+    expect(content).toContain('root: ./data/uploads')
   })
 
   it('应该生成 ai 配置', () => {
@@ -105,8 +105,8 @@ describe('generateConfigFile', () => {
 
     it('storage: 应该生成 S3 配置', () => {
       const content = generateConfigFile('storage', { storage: { type: 's3' } })
-      expect(content).toContain('defaultProvider: s3')
-      expect(content).not.toContain('defaultProvider: local')
+      expect(content).toContain('type: s3')
+      expect(content).not.toContain('type: local')
     })
 
     it('ai: 应该生成 Anthropic 配置', () => {

@@ -328,7 +328,7 @@ core.config.clear() // 清除全部
 `ai.llm.models[0].temperature` 对应 `HAI_AI_LLM_MODELS_0_TEMPERATURE`。
 
 环境变量存在时覆盖 YAML 值，并按 YAML 标量规则还原 number / boolean 等类型；
-环境变量不存在时保留 YAML 值。映射只覆盖 YAML 中已经声明的叶子项，不会凭空新增配置项。
+环境变量不存在时保留 YAML 值。对象或数组节点也可用同名变量整体替换（JSON），例如 HAI_DB 切换完整连接配置、HAI_REACH_PROVIDERS 替换渠道数组。父节点整体覆盖优先于其子字段环境变量；替换后仍执行 Schema 校验。
 
 ```yaml
 # config/_ai.yml（core.init 扫描后配置名为 ai）

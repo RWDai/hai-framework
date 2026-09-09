@@ -213,59 +213,20 @@ seedDefaultData: true
 }
 
 function generateStorageConfig(cfg?: StorageModuleConfig): string {
-  const storageType = cfg?.type ?? 'local'
-
-  if (storageType === 'local') {
-    const localPath = cfg?.localPath ?? './data/uploads'
-    return `# =============================================================================
-# 存储配置
-# =============================================================================
-
-# 默认 Provider
-defaultProvider: local
-
-# Provider 配置
-providers:
-  local:
-    type: local
-    root: ${localPath}
-    maxFileSize: 10485760  # 10MB
-
-  # S3 配置（可选）
-  # s3:
-  #   type: s3
-  #   bucket: my-bucket
-  #   region: us-east-1
-  #   accessKeyId: ''
-  #   secretAccessKey: ''
-  #   endpoint: ''
-  #   forcePathStyle: false
+  if ((cfg?.type ?? 'local') === 'local') {
+    return `# 存储配置；HAI_STORAGE 可整体替换为 S3 配置。
+type: local
+root: ${cfg?.localPath ?? './data/uploads'}
 `
   }
-
-  return `# =============================================================================
-# 存储配置
-# =============================================================================
-
-# 默认 Provider
-defaultProvider: s3
-
-# Provider 配置
-providers:
-  s3:
-    type: s3
-    bucket: ''
-    region: us-east-1
-    accessKeyId: ''
-    secretAccessKey: ''
-    # endpoint: ''
-    # forcePathStyle: false
-
-  # 本地存储（可选）
-  # local:
-  #   type: local
-  #   root: ./data/uploads
-  #   maxFileSize: 10485760  # 10MB
+  return `# S3 存储配置
+type: s3
+bucket: ''
+region: us-east-1
+accessKeyId: ''
+secretAccessKey: ''
+endpoint: https://s3.amazonaws.com
+forcePathStyle: false
 `
 }
 
@@ -427,16 +388,16 @@ HAI_CACHE_TYPE=memory
 # Storage (@h-ai/storage)
 # =============================================================================
 # Default storage provider: local | s3
-HAI_STORAGE_DEFAULTPROVIDER=s3
+HAI_STORAGE_TYPE=s3
 # S3 / S3-compatible
-HAI_STORAGE_PROVIDERS_S3_BUCKET=
-HAI_STORAGE_PROVIDERS_S3_REGION=us-east-1
-HAI_STORAGE_PROVIDERS_S3_ACCESSKEYID=
-HAI_STORAGE_PROVIDERS_S3_SECRETACCESSKEY=
-# HAI_STORAGE_PROVIDERS_S3_ENDPOINT=          # Custom endpoint for MinIO / Aliyun OSS etc.
-# HAI_STORAGE_PROVIDERS_S3_FORCEPATHSTYLE=false
+HAI_STORAGE_BUCKET=
+HAI_STORAGE_REGION=us-east-1
+HAI_STORAGE_ACCESSKEYID=
+HAI_STORAGE_SECRETACCESSKEY=
+# HAI_STORAGE_ENDPOINT=          # Custom endpoint for MinIO / Aliyun OSS etc.
+# HAI_STORAGE_FORCEPATHSTYLE=false
 # Local storage (uncomment when type=local)
-# HAI_STORAGE_PROVIDERS_LOCAL_ROOT=./data/uploads`)
+# HAI_STORAGE_ROOT=./data/uploads`)
     }
     else {
       sections.push(`
@@ -444,16 +405,16 @@ HAI_STORAGE_PROVIDERS_S3_SECRETACCESSKEY=
 # Storage (@h-ai/storage)
 # =============================================================================
 # Default storage provider: local | s3
-HAI_STORAGE_DEFAULTPROVIDER=local
+HAI_STORAGE_TYPE=local
 # Local storage root path
-HAI_STORAGE_PROVIDERS_LOCAL_ROOT=${configs?.storage?.localPath ?? './data/uploads'}
+HAI_STORAGE_ROOT=${configs?.storage?.localPath ?? './data/uploads'}
 # S3 / S3-compatible (uncomment when type=s3)
-# HAI_STORAGE_PROVIDERS_S3_BUCKET=
-# HAI_STORAGE_PROVIDERS_S3_REGION=us-east-1
-# HAI_STORAGE_PROVIDERS_S3_ACCESSKEYID=
-# HAI_STORAGE_PROVIDERS_S3_SECRETACCESSKEY=
-# HAI_STORAGE_PROVIDERS_S3_ENDPOINT=          # Custom endpoint for MinIO / Aliyun OSS etc.
-# HAI_STORAGE_PROVIDERS_S3_FORCEPATHSTYLE=false`)
+# HAI_STORAGE_BUCKET=
+# HAI_STORAGE_REGION=us-east-1
+# HAI_STORAGE_ACCESSKEYID=
+# HAI_STORAGE_SECRETACCESSKEY=
+# HAI_STORAGE_ENDPOINT=          # Custom endpoint for MinIO / Aliyun OSS etc.
+# HAI_STORAGE_FORCEPATHSTYLE=false`)
     }
   }
 
@@ -590,17 +551,21 @@ services:
   #   provisioner: cloudflare-r2
   #   accountId: \${HAI_DEPLOY_CF_ACCOUNT_ID}
   #   apiToken: \${HAI_DEPLOY_CF_API_TOKEN}
+  #   accessKeyId: \${HAI_DEPLOY_R2_ACCESS_KEY_ID}
+  #   secretAccessKey: \${HAI_DEPLOY_R2_SECRET_ACCESS_KEY}
 
   # 邮件 (Resend)
   # email:
   #   provisioner: resend
   #   apiKey: \${HAI_DEPLOY_RESEND_API_KEY}
+  #   from: \${HAI_DEPLOY_RESEND_FROM}
 
   # 短信 (阿里云)
   # sms:
   #   provisioner: aliyun
   #   accessKeyId: \${HAI_DEPLOY_ALIYUN_ACCESS_KEY_ID}
   #   accessKeySecret: \${HAI_DEPLOY_ALIYUN_ACCESS_KEY_SECRET}
+  #   signName: \${HAI_DEPLOY_ALIYUN_SIGN_NAME}
 `
 }
 

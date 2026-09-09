@@ -21,15 +21,16 @@ const logger = core.logger.child({ module: 'deploy', scope: 'functions' })
  *
  * @param appDir - 应用根目录
  * @param buildCommand - 构建命令
+ * @param envVars - 当前部署开通结果，确保构建与运行使用同一配置
  * @returns 构建结果
  */
-export function buildApp(appDir: string, buildCommand: string): HaiResult<void> {
+export function buildApp(appDir: string, buildCommand: string, envVars: Record<string, string> = {}): HaiResult<void> {
   logger.info('Building application', { appDir, buildCommand })
   try {
     execSync(buildCommand, {
       cwd: appDir,
       stdio: 'inherit',
-      env: { ...process.env },
+      env: { ...process.env, ...envVars },
     })
     return ok(undefined)
   }

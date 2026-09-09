@@ -25,6 +25,7 @@ const RESEND_API = 'https://api.resend.com'
  */
 export function createResendProvisioner(): ServiceProvisioner {
   let token: string | null = null
+  let from = ''
 
   return {
     name: 'resend',
@@ -34,8 +35,8 @@ export function createResendProvisioner(): ServiceProvisioner {
       logger.debug('Authenticating with Resend')
       try {
         const apiToken = credentials.apiKey ?? credentials.api_key ?? credentials.token ?? ''
-        if (!apiToken) {
-          throw new Error(deployM('deploy_credentialMissing', { params: { fields: 'api_key' } }))
+        if (!apiToken || !credentials.from) {
+          throw new Error(deployM('deploy_credentialMissing', { params: { fields: 'apiKey, from' } }))
         }
 
         const res = await fetch(`${RESEND_API}/domains`, {
@@ -45,6 +46,7 @@ export function createResendProvisioner(): ServiceProvisioner {
           throw new Error(deployM('deploy_apiError', { params: { service: 'Resend', status: String(res.status) } }))
         }
         token = apiToken
+        from = credentials.from
         logger.info('Resend authenticated')
         return ok('resend-user')
       }
@@ -75,7 +77,7 @@ export function createResendProvisioner(): ServiceProvisioner {
         serviceType: 'email',
         provisionerName: 'resend',
         envVars: {
-          HAI_REACH_RESEND_KEY: token,
+          HAI_REACH_PROVIDERS: JSON.stringify([{ name: 'email', type: 'smtp', host: 'smtp.resend.com', port: 465, secure: true, user: 'resend', pass: token, from }]),
         },
         resourceInfo: 'resend:verify-only',
       })

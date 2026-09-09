@@ -44,9 +44,9 @@ describe('deployConfigSchema', () => {
       services: {
         db: { provisioner: 'neon', apiKey: 'neon_xxx' },
         cache: { provisioner: 'upstash', email: 'a@b.com', apiKey: 'upa_xxx' },
-        storage: { provisioner: 'cloudflare-r2', accountId: 'acc123', apiToken: 'cf_xxx' },
-        email: { provisioner: 'resend', apiKey: 're_xxx' },
-        sms: { provisioner: 'aliyun', accessKeyId: 'LTAI_xxx', accessKeySecret: 'xxx' },
+        storage: { provisioner: 'cloudflare-r2', accessKeyId: 's3-key', secretAccessKey: 's3-secret', accountId: 'acc123', apiToken: 'cf_xxx' },
+        email: { provisioner: 'resend', from: 'sender@example.test', apiKey: 're_xxx' },
+        sms: { provisioner: 'aliyun', signName: 'Test', accessKeyId: 'LTAI_xxx', accessKeySecret: 'xxx' },
       },
     })
     expect(result.success).toBe(true)

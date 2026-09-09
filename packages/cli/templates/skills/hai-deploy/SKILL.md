@@ -59,13 +59,17 @@ services:
     provisioner: cloudflare-r2
     accountId: ${HAI_DEPLOY_CF_ACCOUNT_ID}
     apiToken: ${HAI_DEPLOY_CF_API_TOKEN}
+    accessKeyId: ${HAI_DEPLOY_R2_ACCESS_KEY_ID}
+    secretAccessKey: ${HAI_DEPLOY_R2_SECRET_ACCESS_KEY}
   email:
     provisioner: resend
     apiKey: ${HAI_DEPLOY_RESEND_API_KEY}
+    from: ${HAI_DEPLOY_RESEND_FROM}
   sms:
     provisioner: aliyun
     accessKeyId: ${HAI_DEPLOY_ALIYUN_ACCESS_KEY_ID}
     accessKeySecret: ${HAI_DEPLOY_ALIYUN_ACCESS_KEY_SECRET}
+    signName: ${HAI_DEPLOY_ALIYUN_SIGN_NAME}
 ```
 
 这些凭证名由 `deploy.credentials` 管理，属于显式特殊映射；若同时设置
@@ -234,3 +238,5 @@ const result = await deploy.deployApp('./apps/my-app')
 - **hai-cache** — 缓存（Upstash Redis）
 
 失败与降级提示也必须国际化：官网 API 按请求 locale 生成 AI 降级/邮件送达状态；未送达不能称为已接收。CLI 部署状态使用 cliM，Gallery 加密能力限制使用双语消息。中文与英文分别验证未配置、失败和成功路径，无需调用付费服务。
+
+云资源配置消费：Neon 输出 HAI_DB（PostgreSQL JSON），Upstash 输出 HAI_CACHE（Redis rediss URL JSON），R2 输出 HAI_STORAGE（扁平 S3 JSON）。邮件/短信输出 HAI_REACH_PROVIDERS 数组，deployApp 合并两个渠道并保留 YAML 中的消息模板；此覆盖替换原 providers 数组。Core 支持整体对象/数组覆盖，父节点优先于叶子变量，仍执行 Schema 校验；构建子进程与目标运行环境使用相同开通结果。R2 必须提供已有 S3 accessKeyId/secretAccessKey；Resend 必须提供已验证域名的 from；阿里云必须提供已审核 signName/模板。应用须已有相应 _db/_cache/_storage/_reach.yml 并在启动时加载，网络客户端需要 Node 运行时。

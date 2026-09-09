@@ -44,7 +44,7 @@
 
 ### ARCH-01｜P1｜打通云资源开通结果与应用配置的真实消费链
 
-- [ ] **任务**：对齐 Deploy 输出的环境变量、CLI 配置模板和 Core/RelDB/Cache/Storage/Reach 实际接入能力。
+- [x] **任务**：对齐 Deploy 输出的环境变量、CLI 配置模板和 Core/RelDB/Cache/Storage/Reach 实际接入能力。
 - **证据与影响〔静态确认〕**：[Neon](../packages/deploy/src/provisioners/deploy-provisioner-neon.ts) 第 105 行输出 `HAI_RELDB_URL`；[应用初始化](../apps/admin-console/src/lib/server/init.ts) 第 102 行读取 `db` 配置，[Core 环境变量映射](../packages/core/src/functions/core-function-config.node.ts) 第 84 行按配置名与叶子路径生成变量名。[Upstash](../packages/deploy/src/provisioners/deploy-provisioner-upstash.ts) 输出 REST URL/token，但 [Cache Schema](../packages/cache/src/cache-config.ts) 仅支持 memory/Redis 连接配置；[R2](../packages/deploy/src/provisioners/deploy-provisioner-r2.ts) 输出 `HAI_STORAGE_S3_*`，而应用使用扁平 Storage 配置。全局检索这些输出变量仅发现 provisioner 与其测试，没有实际应用消费链；默认 SQLite/memory/local 也未随开通结果切换。
 - **验收**：将模拟开通结果注入一个真实 CLI 生成应用，通过 Core 读取并验证最终连接配置；再在具备条件时完成云端写入/读取验收。优先复用已有 Redis/S3/邮件能力，无法适配的渠道明确限制。禁止仅断言返回字符串就认定部署集成成功。
 - **建议负责人/工作量/依赖**：Deploy＋Core/CLI 维护者 / L / PM-01 更新支持边界。
@@ -278,3 +278,5 @@
 - **USER-06**：应用 HTTP 读取边界记录并返回 503，分页/权限/用户角色/仪表盘不再吞错；未知权限 code 返回 400，错误页支持刷新。真实 SQLite 断库、损坏权限表及零写入、后续分页故障和仪表盘失败测试通过；管理端 7/7、check 0 错误，README 与双份应用审查 skill 同步。
 
 - **USER-08**：官网 API 显式按请求 locale 输出 AI 降级、邮件未配置/失败/成功；CLI 全部部署状态接入 cliM，Gallery 加密限制和示例状态双语化。官网双语 handler 测试 4/4、CLI 10/10、CLI typecheck、两应用 check 0 错误通过；README、deploy/应用审查 skills 及中英文消息同步。
+
+- **ARCH-01**：开通结果改为 Core 可消费的 JSON 对象/数组覆盖：PostgreSQL、Redis TLS、R2 S3、Resend SMTP 和短信渠道；父节点覆盖仍经 Schema 校验，构建与运行使用同配置，Storage 生成器/环境样例改为扁平契约。真实 createProject 后注入模拟开通结果，经 Core 和各模块 Schema 验证通过；CLI 配置 17/17、Deploy 71/71、Core 配置 29/29、CLI/Deploy typecheck/build 通过。README、Core/Deploy skills、LLMS、模板同步；未创建或连接真实云资源。

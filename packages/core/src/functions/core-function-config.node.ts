@@ -101,11 +101,12 @@ function buildConventionEnvName(name: string, path: string[]): string {
  * @returns 插值后的结果；当环境变量缺失且未提供默认值时返回 ENV_VAR_MISSING 错误
  */
 function resolveEnv(value: unknown, name: string, path: string[] = []): HaiResult<unknown> {
-  if (typeof value === 'string') {
-    const conventionEnvValue = process.env[buildConventionEnvName(name, path)]
-    if (conventionEnvValue !== undefined)
-      return ok(parseEnvValue(conventionEnvValue))
+  // 对象和数组也可整体覆盖，云配置可以注入原 YAML 未声明的连接字段。
+  const conventionEnvValue = process.env[buildConventionEnvName(name, path)]
+  if (conventionEnvValue !== undefined)
+    return ok(parseEnvValue(conventionEnvValue))
 
+  if (typeof value === 'string') {
     ENV_VAR_PATTERN.lastIndex = 0
     const hasExplicitEnv = ENV_VAR_PATTERN.test(value)
     ENV_VAR_PATTERN.lastIndex = 0
@@ -159,8 +160,7 @@ function resolveEnv(value: unknown, name: string, path: string[] = []): HaiResul
     return ok(results)
   }
 
-  const envValue = process.env[buildConventionEnvName(name, path)]
-  return ok(envValue === undefined ? value : parseEnvValue(envValue))
+  return ok(value)
 }
 
 // ─── 配置管理器 ───

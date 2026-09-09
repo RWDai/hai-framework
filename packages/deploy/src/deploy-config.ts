@@ -39,6 +39,8 @@ const UpstashServiceSchema = z.object({
 /** Cloudflare R2 存储服务配置 */
 const R2ServiceSchema = z.object({
   provisioner: z.literal('cloudflare-r2'),
+  accessKeyId: z.string().min(1),
+  secretAccessKey: z.string().min(1),
   accountId: z.string().min(1),
   apiToken: z.string().min(1),
 })
@@ -46,12 +48,14 @@ const R2ServiceSchema = z.object({
 /** Resend 邮件服务配置 */
 const ResendServiceSchema = z.object({
   provisioner: z.literal('resend'),
+  from: z.string().email(),
   apiKey: z.string().min(1),
 })
 
 /** 阿里云短信服务配置 */
 const AliyunSmsServiceSchema = z.object({
   provisioner: z.literal('aliyun'),
+  signName: z.string().min(1),
   accessKeyId: z.string().min(1),
   accessKeySecret: z.string().min(1),
 })

@@ -25,6 +25,8 @@ const CF_API = 'https://api.cloudflare.com/client/v4'
 export function createR2Provisioner(): ServiceProvisioner {
   let token: string | null = null
   let accountId: string | null = null
+  let accessKey = ''
+  let secretKey = ''
 
   return {
     name: 'r2',
@@ -35,8 +37,8 @@ export function createR2Provisioner(): ServiceProvisioner {
       try {
         const acctId = credentials.accountId ?? credentials.account_id ?? ''
         const apiTok = credentials.apiToken ?? credentials.api_token ?? credentials.token ?? ''
-        if (!acctId || !apiTok) {
-          throw new Error(deployM('deploy_credentialMissing', { params: { fields: 'account_id, api_token' } }))
+        if (!acctId || !apiTok || !credentials.accessKeyId || !credentials.secretAccessKey) {
+          throw new Error(deployM('deploy_credentialMissing', { params: { fields: 'accountId, apiToken, accessKeyId, secretAccessKey' } }))
         }
 
         const res = await fetch(`${CF_API}/accounts/${acctId}/r2/buckets`, {
@@ -48,6 +50,8 @@ export function createR2Provisioner(): ServiceProvisioner {
 
         accountId = acctId
         token = apiTok
+        accessKey = credentials.accessKeyId
+        secretKey = credentials.secretAccessKey
         logger.info('Cloudflare R2 authenticated', { accountId: acctId })
         return ok(acctId)
       }
@@ -93,49 +97,20 @@ export function createR2Provisioner(): ServiceProvisioner {
           throw new Error(deployM('deploy_apiError', { params: { service: 'Cloudflare', status: String(createRes.status) } }))
         }
 
-        // 创建 API Token（S3 兼容访问）
-        const tokenRes = await fetch(
-          `${CF_API}/user/tokens`,
-          {
-            method: 'POST',
-            headers: {
-              'Authorization': `Bearer ${token}`,
-              'Content-Type': 'application/json',
-            },
-            body: JSON.stringify({
-              name: `${appName}-r2-token`,
-              policies: [{
-                effect: 'allow',
-                permission_groups: [{ id: 'r2-read-write' }],
-                resources: { [`com.cloudflare.edge.r2.bucket.${accountId}_default_${bucketName}`]: '*' },
-              }],
-            }),
-          },
-        )
-
-        if (!tokenRes.ok) {
-          throw new Error(deployM('deploy_apiError', { params: { service: 'Cloudflare', status: String(tokenRes.status) } }))
-        }
-
-        const tokenData = await tokenRes.json() as {
-          result?: { id?: string, value?: string }
-        }
-        const accessKey = tokenData.result?.id ?? ''
-        const secretKey = tokenData.result?.value ?? ''
-        if (!accessKey || !secretKey) {
-          throw new Error(deployM('deploy_provisionNoResult', { params: { service: 'Cloudflare R2' } }))
-        }
-
         logger.info('R2 bucket provisioned', { bucketName })
 
         return ok({
           serviceType: 'storage',
           provisionerName: 'r2',
           envVars: {
-            HAI_STORAGE_S3_ENDPOINT: `https://${accountId}.r2.cloudflarestorage.com`,
-            HAI_STORAGE_S3_BUCKET: bucketName,
-            HAI_STORAGE_S3_ACCESS_KEY: accessKey,
-            HAI_STORAGE_S3_SECRET_KEY: secretKey,
+            HAI_STORAGE: JSON.stringify({
+              type: 's3',
+              endpoint: `https://${accountId}.r2.cloudflarestorage.com`,
+              bucket: bucketName,
+              region: 'auto',
+              accessKeyId: accessKey,
+              secretAccessKey: secretKey,
+            }),
           },
           resourceInfo: `r2-bucket:${bucketName}`,
         })

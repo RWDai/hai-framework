@@ -7,7 +7,7 @@
 import { mkdtempSync, rmSync, writeFileSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
-import { afterEach, beforeEach, describe, expect, it } from 'vitest'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { z } from 'zod'
 import { core } from '../src/index.js'
 
@@ -27,6 +27,7 @@ describe('core.config', () => {
   })
 
   afterEach(() => {
+    vi.unstubAllEnvs()
     core.config.clear()
     rmSync(tempDir, { recursive: true, force: true })
     delete process.env.FOO
@@ -45,6 +46,19 @@ describe('core.config', () => {
   // =========================================================================
   // load
   // =========================================================================
+
+  it('对象与数组的环境覆盖替换整个节点，仍通过 Schema 验证', () => {
+    writeFileSync(configPath, 'providers:\n  - name: console\n    type: console\n', 'utf-8')
+    const providersSchema = z.object({ providers: z.array(z.object({ name: z.string(), type: z.string() })) })
+    vi.stubEnv('HAI_APP_PROVIDERS', JSON.stringify([{ name: 'email', type: 'smtp' }]))
+    expect(core.config.load('app', configPath, providersSchema)).toMatchObject({ success: true, data: { providers: [{ name: 'email', type: 'smtp' }] } })
+    core.config.clear()
+    vi.stubEnv('HAI_APP', JSON.stringify({ providers: [{ name: 'sms', type: 'sms' }] }))
+    expect(core.config.load('app', configPath, providersSchema)).toMatchObject({ success: true, data: { providers: [{ name: 'sms', type: 'sms' }] } })
+    core.config.clear()
+    vi.stubEnv('HAI_APP', 'invalid-object')
+    expect(core.config.load('app', configPath, providersSchema).success).toBe(false)
+  })
 
   it('load 应该读取并插值环境变量', () => {
     process.env.FOO = 'bar'

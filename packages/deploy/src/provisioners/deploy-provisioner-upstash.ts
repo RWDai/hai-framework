@@ -23,10 +23,8 @@ interface UpstashDatabase {
   database_id?: string
   database_name?: string
   endpoint?: string
-  rest_url?: string
-  rest_token?: string
+  port?: number
   password?: string
-  token?: string
 }
 
 /** 构建 Upstash Developer API 的 Basic Auth 请求头。 */
@@ -77,46 +75,11 @@ async function getUpstashDatabase(email: string, apiKey: string, databaseId: str
   return upstashFetch<UpstashDatabase>(email, apiKey, `/v2/redis/database/${databaseId}`)
 }
 
-/**
- * 解析 REST URL。
- *
- * Upstash 文档中的 Developer API 详情页可能返回 `endpoint` 或 `rest_url`，
- * 因此这里兼容两种字段形态。
- */
-function resolveUpstashRestUrl(database: UpstashDatabase): string {
-  if (typeof database.rest_url === 'string' && database.rest_url.length > 0) {
-    return database.rest_url
-  }
-
-  const endpoint = database.endpoint?.trim() ?? ''
-  if (!endpoint) {
-    return ''
-  }
-  if (endpoint.startsWith('http://') || endpoint.startsWith('https://')) {
-    return endpoint
-  }
-  if (endpoint.includes('.')) {
-    return `https://${endpoint}`
-  }
-  return `https://${endpoint}.upstash.io`
-}
-
-/**
- * 解析 REST Token。
- *
- * 某些响应会返回 `rest_token`，旧字段则可能仍使用 `password` / `token`。
- */
-function resolveUpstashRestToken(database: UpstashDatabase): string {
-  return database.rest_token ?? database.token ?? database.password ?? ''
-}
-
 /** 将 Upstash 响应转换为 deploy 统一结果。 */
 function buildUpstashProvisionResult(database: UpstashDatabase): ProvisionResult {
   const databaseId = database.database_id ?? ''
-  const restUrl = resolveUpstashRestUrl(database)
-  const restToken = resolveUpstashRestToken(database)
 
-  if (!databaseId || !restUrl || !restToken) {
+  if (!databaseId || !database.endpoint || !database.password || !database.port) {
     throw new Error(deployM('deploy_provisionNoResult', { params: { service: 'Upstash' } }))
   }
 
@@ -124,8 +87,7 @@ function buildUpstashProvisionResult(database: UpstashDatabase): ProvisionResult
     serviceType: 'cache',
     provisionerName: 'upstash',
     envVars: {
-      HAI_CACHE_UPSTASH_URL: restUrl,
-      HAI_CACHE_UPSTASH_TOKEN: restToken,
+      HAI_CACHE: JSON.stringify({ type: 'redis', url: `rediss://default:${encodeURIComponent(database.password)}@${database.endpoint}:${database.port}` }),
     },
     resourceInfo: `upstash-db:${databaseId}`,
   }

@@ -102,7 +102,7 @@ function buildNeonProvisionResult(projectId: string, connectionUri: string): Pro
     serviceType: 'db',
     provisionerName: 'neon',
     envVars: {
-      HAI_RELDB_URL: connectionUri,
+      HAI_DB: JSON.stringify({ type: 'postgresql', url: connectionUri, database: decodeURIComponent(new URL(connectionUri).pathname.slice(1)) }),
     },
     resourceInfo: `neon-project:${projectId}`,
   }

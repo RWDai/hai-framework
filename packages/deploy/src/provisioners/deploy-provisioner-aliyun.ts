@@ -22,6 +22,7 @@ const logger = core.logger.child({ module: 'deploy', scope: 'provisioner-aliyun'
 export function createAliyunProvisioner(): ServiceProvisioner {
   let accessKey: string | null = null
   let secretKey: string | null = null
+  let signName = ''
 
   return {
     name: 'aliyun',
@@ -33,12 +34,13 @@ export function createAliyunProvisioner(): ServiceProvisioner {
         const akId = credentials.accessKeyId ?? credentials.access_key_id ?? credentials.access_key ?? ''
         const akSecret = credentials.accessKeySecret ?? credentials.access_key_secret ?? credentials.secret_key ?? ''
 
-        if (!akId || !akSecret) {
-          throw new Error(deployM('deploy_credentialMissing', { params: { fields: 'access_key_id, access_key_secret' } }))
+        if (!akId || !akSecret || !credentials.signName) {
+          throw new Error(deployM('deploy_credentialMissing', { params: { fields: 'accessKeyId, accessKeySecret, signName' } }))
         }
 
         accessKey = akId
         secretKey = akSecret
+        signName = credentials.signName
         logger.info('Aliyun authenticated', { accessKeyId: `${akId.slice(0, 6)}***` })
         return ok(akId)
       }
@@ -69,8 +71,7 @@ export function createAliyunProvisioner(): ServiceProvisioner {
         serviceType: 'sms',
         provisionerName: 'aliyun',
         envVars: {
-          HAI_REACH_SMS_ACCESS_KEY: accessKey,
-          HAI_REACH_SMS_SECRET_KEY: secretKey,
+          HAI_REACH_PROVIDERS: JSON.stringify([{ name: 'sms', type: 'aliyun-sms', accessKeyId: accessKey, accessKeySecret: secretKey, signName }]),
         },
         resourceInfo: 'aliyun:verify-only',
       })

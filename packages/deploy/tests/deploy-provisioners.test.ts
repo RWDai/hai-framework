@@ -87,7 +87,7 @@ describe('neon provisioner', () => {
     if (result.success) {
       expect(result.data.serviceType).toBe('db')
       expect(result.data.provisionerName).toBe('neon')
-      expect(result.data.envVars.HAI_RELDB_URL).toBe('postgres://user:pass@host/db')
+      expect(JSON.parse(result.data.envVars.HAI_DB).url).toBe('postgres://user:pass@host/db')
     }
   })
 
@@ -107,7 +107,7 @@ describe('neon provisioner', () => {
     expect(result.success).toBe(true)
     if (result.success) {
       expect(result.data.resourceInfo).toBe('neon-project:neon_prj_existing')
-      expect(result.data.envVars.HAI_RELDB_URL).toBe('postgres://existing:pass@host/neondb')
+      expect(JSON.parse(result.data.envVars.HAI_DB).url).toBe('postgres://existing:pass@host/neondb')
     }
   })
 
@@ -166,15 +166,16 @@ describe('upstash provisioner', () => {
     mockFetch.mockResolvedValueOnce(mockJsonResponse([]))
     mockFetch.mockResolvedValueOnce(mockJsonResponse({
       database_id: 'db_123',
-      rest_url: 'https://upstash.io/redis',
-      rest_token: 'token_abc',
+      endpoint: 'cache.upstash.io',
+      port: 6379,
+      password: 'token_abc',
     }))
 
     const result = await up.provision('my-app')
     expect(result.success).toBe(true)
     if (result.success) {
       expect(result.data.serviceType).toBe('cache')
-      expect(result.data.envVars.HAI_CACHE_UPSTASH_URL).toBe('https://upstash.io/redis')
+      expect(JSON.parse(result.data.envVars.HAI_CACHE).url).toBe('rediss://default:token_abc@cache.upstash.io:6379')
     }
   })
 
@@ -193,14 +194,14 @@ describe('upstash provisioner', () => {
       database_id: 'db_existing',
       endpoint: 'rough-sound-12345.upstash.io',
       password: 'token_existing',
+      port: 6379,
     }))
 
     const result = await up.provision('my-app')
     expect(result.success).toBe(true)
     if (result.success) {
       expect(result.data.resourceInfo).toBe('upstash-db:db_existing')
-      expect(result.data.envVars.HAI_CACHE_UPSTASH_URL).toBe('https://rough-sound-12345.upstash.io')
-      expect(result.data.envVars.HAI_CACHE_UPSTASH_TOKEN).toBe('token_existing')
+      expect(JSON.parse(result.data.envVars.HAI_CACHE).url).toBe('rediss://default:token_existing@rough-sound-12345.upstash.io:6379')
     }
   })
 })
@@ -219,7 +220,7 @@ describe('r2 provisioner', () => {
   it('should authenticate with account_id + api_token', async () => {
     mockFetch.mockResolvedValueOnce(mockJsonResponse({ result: [] }))
     const r2 = createR2Provisioner()
-    const result = await r2.authenticate({ account_id: 'acc_123', api_token: 'cf_token' })
+    const result = await r2.authenticate({ account_id: 'acc_123', api_token: 'cf_token', accessKeyId: 's3-key', secretAccessKey: 's3-secret' })
     expect(result.success).toBe(true)
     if (result.success) {
       expect(result.data).toBe('acc_123')
@@ -229,7 +230,7 @@ describe('r2 provisioner', () => {
   it('should authenticate with camelCase keys from config', async () => {
     mockFetch.mockResolvedValueOnce(mockJsonResponse({ result: [] }))
     const r2 = createR2Provisioner()
-    const result = await r2.authenticate({ accountId: 'acc_123', apiToken: 'cf_token' })
+    const result = await r2.authenticate({ accountId: 'acc_123', apiToken: 'cf_token', accessKeyId: 's3-key', secretAccessKey: 's3-secret' })
     expect(result.success).toBe(true)
     if (result.success) {
       expect(result.data).toBe('acc_123')
@@ -242,13 +243,11 @@ describe('r2 provisioner', () => {
     expect(result.success).toBe(false)
   })
 
-  it('should fail provision when API token creation fails', async () => {
+  it('should fail provision when bucket creation fails', async () => {
     mockFetch.mockResolvedValueOnce(mockJsonResponse({ result: [] }))
     const r2 = createR2Provisioner()
-    await r2.authenticate({ accountId: 'acc_123', apiToken: 'cf_token' })
+    await r2.authenticate({ accountId: 'acc_123', apiToken: 'cf_token', accessKeyId: 's3-key', secretAccessKey: 's3-secret' })
 
-    // bucket create succeeds, token create fails
-    mockFetch.mockResolvedValueOnce(mockJsonResponse({ result: {} }))
     mockFetch.mockResolvedValueOnce(mockJsonResponse({ error: 'token failed' }, 500))
 
     const result = await r2.provision('my-app')
@@ -273,27 +272,27 @@ describe('resend provisioner', () => {
   it('should authenticate with api_key', async () => {
     mockFetch.mockResolvedValueOnce(mockJsonResponse({ data: [] }))
     const resend = createResendProvisioner()
-    const result = await resend.authenticate({ api_key: 're_xxx' })
+    const result = await resend.authenticate({ api_key: 're_xxx', from: 'sender@example.test' })
     expect(result.success).toBe(true)
   })
 
   it('should authenticate with camelCase apiKey from config', async () => {
     mockFetch.mockResolvedValueOnce(mockJsonResponse({ data: [] }))
     const resend = createResendProvisioner()
-    const result = await resend.authenticate({ apiKey: 're_camel' })
+    const result = await resend.authenticate({ apiKey: 're_camel', from: 'sender@example.test' })
     expect(result.success).toBe(true)
   })
 
   it('should provision (verify-only)', async () => {
     mockFetch.mockResolvedValueOnce(mockJsonResponse({ data: [] }))
     const resend = createResendProvisioner()
-    await resend.authenticate({ api_key: 're_xxx' })
+    await resend.authenticate({ api_key: 're_xxx', from: 'sender@example.test' })
 
     const result = await resend.provision('my-app')
     expect(result.success).toBe(true)
     if (result.success) {
       expect(result.data.serviceType).toBe('email')
-      expect(result.data.envVars.HAI_REACH_RESEND_KEY).toBe('re_xxx')
+      expect(JSON.parse(result.data.envVars.HAI_REACH_PROVIDERS)[0].pass).toBe('re_xxx')
     }
   })
 })
@@ -314,6 +313,7 @@ describe('aliyun provisioner', () => {
     const result = await aliyun.authenticate({
       access_key_id: 'LTAI_xxx',
       access_key_secret: 'secret_xxx',
+      signName: 'Test',
     })
     expect(result.success).toBe(true)
     if (result.success) {
@@ -326,6 +326,7 @@ describe('aliyun provisioner', () => {
     const result = await aliyun.authenticate({
       accessKeyId: 'LTAI_camel',
       accessKeySecret: 'secret_camel',
+      signName: 'Test',
     })
     expect(result.success).toBe(true)
     if (result.success) {
@@ -344,13 +345,14 @@ describe('aliyun provisioner', () => {
     await aliyun.authenticate({
       access_key_id: 'LTAI_xxx',
       access_key_secret: 'secret_xxx',
+      signName: 'Test',
     })
 
     const result = await aliyun.provision('my-app')
     expect(result.success).toBe(true)
     if (result.success) {
       expect(result.data.serviceType).toBe('sms')
-      expect(result.data.envVars.HAI_REACH_SMS_ACCESS_KEY).toBe('LTAI_xxx')
+      expect(JSON.parse(result.data.envVars.HAI_REACH_PROVIDERS)[0].accessKeyId).toBe('LTAI_xxx')
     }
   })
 })
