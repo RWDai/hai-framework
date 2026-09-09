@@ -12,6 +12,7 @@ import { Buffer } from 'node:buffer'
 import { core, err, ok } from '@h-ai/core'
 
 import { deployM } from '../deploy-i18n.js'
+import { recoveryFailure } from '../deploy-recovery.js'
 import { HaiDeployError } from '../deploy-types.js'
 
 const logger = core.logger.child({ module: 'deploy', scope: 'provisioner-upstash' })
@@ -76,7 +77,7 @@ async function getUpstashDatabase(email: string, apiKey: string, databaseId: str
 }
 
 /** 将 Upstash 响应转换为 deploy 统一结果。 */
-function buildUpstashProvisionResult(database: UpstashDatabase): ProvisionResult {
+function buildUpstashProvisionResult(database: UpstashDatabase, resourceStatus: 'created' | 'reused'): ProvisionResult {
   const databaseId = database.database_id ?? ''
 
   if (!databaseId || !database.endpoint || !database.password || !database.port) {
@@ -86,6 +87,7 @@ function buildUpstashProvisionResult(database: UpstashDatabase): ProvisionResult
   return {
     serviceType: 'cache',
     provisionerName: 'upstash',
+    resourceStatus,
     envVars: {
       HAI_CACHE: JSON.stringify({ type: 'redis', url: `rediss://default:${encodeURIComponent(database.password)}@${database.endpoint}:${database.port}` }),
     },
@@ -143,6 +145,7 @@ export function createUpstashProvisioner(): ServiceProvisioner {
       }
 
       logger.debug('Provisioning Upstash Redis', { appName })
+      let resource: { resourceInfo: string, resourceStatus: 'created' | 'reused' } | undefined
       try {
         const databaseName = `${appName}-cache`
 
@@ -153,9 +156,10 @@ export function createUpstashProvisioner(): ServiceProvisioner {
             throw new Error(deployM('deploy_provisionNoResult', { params: { service: 'Upstash' } }))
           }
 
+          resource = { resourceInfo: `upstash-db:${databaseId}`, resourceStatus: 'reused' }
           const detail = await getUpstashDatabase(email, apiKey, databaseId)
           logger.info('Upstash Redis reused', { databaseId, databaseName })
-          return ok(buildUpstashProvisionResult({ ...existingDatabase, ...detail }))
+          return ok(buildUpstashProvisionResult({ ...existingDatabase, ...detail }, 'reused'))
         }
 
         const data = await upstashFetch<UpstashDatabase>(email, apiKey, '/v2/redis/database', {
@@ -167,12 +171,21 @@ export function createUpstashProvisioner(): ServiceProvisioner {
           }),
         })
 
+        if (data.database_id)
+          resource = { resourceInfo: `upstash-db:${data.database_id}`, resourceStatus: 'created' }
         logger.info('Upstash Redis provisioned', { databaseId: data.database_id })
 
-        return ok(buildUpstashProvisionResult(data))
+        return ok(buildUpstashProvisionResult(data, 'created'))
       }
       catch (error) {
-        logger.error('Upstash provisioning failed', { appName, error })
+        logger.error('Upstash provisioning failed', { appName })
+        if (resource) {
+          return recoveryFailure({ ...HaiDeployError.PROVISION_FAILED, message: '' }, {
+            projectName: appName,
+            stage: 'provision:cache',
+            resources: [{ serviceType: 'cache', provisionerName: 'upstash', ...resource }],
+          })
+        }
         return err(
           HaiDeployError.PROVISION_FAILED,
           deployM('deploy_provisionFailed', {

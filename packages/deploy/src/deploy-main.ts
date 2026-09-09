@@ -12,6 +12,7 @@ import type {
   DeployAppOptions,
   DeployCredentialOperations,
   DeployFunctions,
+  DeployRecoveryInfo,
   DeployResult,
   ProvisionResult,
   ScanResult,
@@ -27,6 +28,7 @@ import {
 } from './deploy-credentials.js'
 import { buildApp, resolveOutputDir } from './deploy-functions.js'
 import { deployM } from './deploy-i18n.js'
+import { getDeployRecovery, recoveryFailure } from './deploy-recovery.js'
 import { scanApp } from './deploy-scanner.js'
 import { HaiDeployError } from './deploy-types.js'
 import { createVercelProvider } from './providers/deploy-provider-vercel.js'
@@ -278,9 +280,18 @@ export const deploy: DeployFunctions = {
         logger.error('Service provisioning failed', {
           serviceType,
           provisioner: provisioner.name,
-          error: provResult.error,
+          code: provResult.error.code,
         })
-        return err(provResult.error)
+        return recoveryFailure(provResult.error, {
+          projectName,
+          stage: `provision:${serviceType}`,
+          resources: [
+            ...results.map(({ envVars: _envVars, ...resource }) => resource),
+            ...(getDeployRecovery(provResult.error)?.resources ?? [
+              { serviceType, provisionerName: provisioner.name, resourceInfo: projectName, resourceStatus: 'unknown' as const },
+            ]),
+          ],
+        })
       }
       results.push(provResult.data)
       logger.info('Service provisioned', { serviceType, provisioner: provisioner.name })
@@ -319,11 +330,13 @@ export const deploy: DeployFunctions = {
 
     // 3. 开通基础设施
     let allEnvVars: Record<string, string> = {}
+    const recovery: DeployRecoveryInfo = { projectName, stage: 'provision', resources: [] }
     if (!options?.skipProvision) {
       const provResults = await deploy.provisionAll(projectName)
       if (!provResults.success) {
         return err(provResults.error)
       }
+      recovery.resources = provResults.data.map(({ envVars: _envVars, ...resource }) => resource)
       const reachProviders: unknown[] = []
       for (const prov of provResults.data) {
         if (prov.envVars.HAI_REACH_PROVIDERS)
@@ -337,15 +350,16 @@ export const deploy: DeployFunctions = {
     // 4. 创建平台项目
     const projectResult = await currentProvider.createProject(projectName)
     if (!projectResult.success) {
-      return err(projectResult.error)
+      return recoveryFailure(projectResult.error, { ...recovery, stage: 'create-project' })
     }
     const projectId = projectResult.data
+    recovery.platformProjectId = projectId
 
     // 5. 设置环境变量
     if (Object.keys(allEnvVars).length > 0) {
       const envResult = await currentProvider.setEnvVars(projectId, allEnvVars)
       if (!envResult.success) {
-        return err(envResult.error)
+        return recoveryFailure(envResult.error, { ...recovery, stage: 'set-env' })
       }
     }
 
@@ -353,7 +367,7 @@ export const deploy: DeployFunctions = {
     if (!options?.skipBuild) {
       const buildResult = buildApp(appDir, scan.buildCommand, allEnvVars)
       if (!buildResult.success) {
-        return err(buildResult.error)
+        return recoveryFailure(buildResult.error, { ...recovery, stage: 'build' })
       }
     }
 
@@ -361,7 +375,7 @@ export const deploy: DeployFunctions = {
     const outputDir = resolveOutputDir(appDir, currentConfig?.provider.type ?? 'vercel')
     const deployResult = await currentProvider.deploy(projectId, outputDir)
     if (!deployResult.success) {
-      return err(deployResult.error)
+      return recoveryFailure(deployResult.error, { ...recovery, stage: 'deploy' })
     }
 
     // 补充环境变量列表到结果中

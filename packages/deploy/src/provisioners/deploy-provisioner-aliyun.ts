@@ -70,6 +70,7 @@ export function createAliyunProvisioner(): ServiceProvisioner {
       return ok({
         serviceType: 'sms',
         provisionerName: 'aliyun',
+        resourceStatus: 'reused',
         envVars: {
           HAI_REACH_PROVIDERS: JSON.stringify([{ name: 'sms', type: 'aliyun-sms', accessKeyId: accessKey, accessKeySecret: secretKey, signName }]),
         },

@@ -104,6 +104,8 @@ export interface DeployResult {
  * 由 Provisioner 开通服务后返回，包含要注入到部署平台的环境变量。
  */
 export interface ProvisionResult {
+  /** 本次新建或复用；凭证型服务始终为 reused */
+  resourceStatus: 'created' | 'reused'
   /** 服务类型 */
   serviceType: ServiceType
   /** Provisioner 名称 */
@@ -112,6 +114,19 @@ export interface ProvisionResult {
   envVars: Record<string, string>
   /** 资源标识信息（如项目名、数据库名等），用于日志和展示 */
   resourceInfo: string
+}
+
+/** 部署失败后的安全恢复信息，不含环境变量值或原始异常。 */
+export interface DeployRecoveryInfo {
+  projectName: string
+  stage: string
+  platformProjectId?: string
+  resources: Array<{
+    serviceType: ServiceType
+    provisionerName: string
+    resourceInfo: string
+    resourceStatus: 'created' | 'reused' | 'unknown'
+  }>
 }
 
 // ─── 部署选项 ───

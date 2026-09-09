@@ -102,6 +102,7 @@ export function createR2Provisioner(): ServiceProvisioner {
         return ok({
           serviceType: 'storage',
           provisionerName: 'r2',
+          resourceStatus: createRes.status === 409 ? 'reused' : 'created',
           envVars: {
             HAI_STORAGE: JSON.stringify({
               type: 's3',

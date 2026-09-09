@@ -76,6 +76,7 @@ export function createResendProvisioner(): ServiceProvisioner {
       return ok({
         serviceType: 'email',
         provisionerName: 'resend',
+        resourceStatus: 'reused',
         envVars: {
           HAI_REACH_PROVIDERS: JSON.stringify([{ name: 'email', type: 'smtp', host: 'smtp.resend.com', port: 465, secure: true, user: 'resend', pass: token, from }]),
         },

@@ -10,6 +10,7 @@ import type { ServiceProvisioner } from '../deploy-internal-types.js'
 import type { ProvisionResult } from '../deploy-types.js'
 import { core, err, ok } from '@h-ai/core'
 import { deployM } from '../deploy-i18n.js'
+import { recoveryFailure } from '../deploy-recovery.js'
 import { HaiDeployError } from '../deploy-types.js'
 
 const logger = core.logger.child({ module: 'deploy', scope: 'provisioner-neon' })
@@ -97,10 +98,11 @@ async function getNeonConnectionUri(token: string, projectId: string): Promise<s
 }
 
 /** 构建统一的 Neon 开通结果。 */
-function buildNeonProvisionResult(projectId: string, connectionUri: string): ProvisionResult {
+function buildNeonProvisionResult(projectId: string, connectionUri: string, resourceStatus: 'created' | 'reused'): ProvisionResult {
   return {
     serviceType: 'db',
     provisionerName: 'neon',
+    resourceStatus,
     envVars: {
       HAI_DB: JSON.stringify({ type: 'postgresql', url: connectionUri, database: decodeURIComponent(new URL(connectionUri).pathname.slice(1)) }),
     },
@@ -161,17 +163,19 @@ export function createNeonProvisioner(): ServiceProvisioner {
       }
 
       logger.debug('Provisioning Neon database', { appName })
+      let resource: { resourceInfo: string, resourceStatus: 'created' | 'reused' } | undefined
       try {
         const projectName = `${appName}-db`
 
         const existingProject = await findExistingNeonProject(token, projectName)
         if (existingProject !== null) {
+          resource = { resourceInfo: `neon-project:${existingProject.id}`, resourceStatus: 'reused' }
           const connectionUri = await getNeonConnectionUri(token, existingProject.id)
           logger.info('Neon project reused', {
             projectId: existingProject.id,
             projectName,
           })
-          return ok(buildNeonProvisionResult(existingProject.id, connectionUri))
+          return ok(buildNeonProvisionResult(existingProject.id, connectionUri, 'reused'))
         }
 
         const data = await neonFetch<NeonCreateProjectResponse>(token, '/projects', {
@@ -185,6 +189,8 @@ export function createNeonProvisioner(): ServiceProvisioner {
         })
 
         const projectId = data.project?.id ?? ''
+        if (projectId)
+          resource = { resourceInfo: `neon-project:${projectId}`, resourceStatus: 'created' }
         const connectionUri = data.connection_uris?.[0]?.connection_uri ?? ''
         if (!projectId || !connectionUri) {
           throw new Error(deployM('deploy_provisionNoResult', { params: { service: 'Neon' } }))
@@ -192,10 +198,17 @@ export function createNeonProvisioner(): ServiceProvisioner {
 
         logger.info('Neon database provisioned', { projectId })
 
-        return ok(buildNeonProvisionResult(projectId, connectionUri))
+        return ok(buildNeonProvisionResult(projectId, connectionUri, 'created'))
       }
       catch (error) {
-        logger.error('Neon provisioning failed', { appName, error })
+        logger.error('Neon provisioning failed', { appName })
+        if (resource) {
+          return recoveryFailure({ ...HaiDeployError.PROVISION_FAILED, message: '' }, {
+            projectName: appName,
+            stage: 'provision:db',
+            resources: [{ serviceType: 'db', provisionerName: 'neon', ...resource }],
+          })
+        }
         return err(
           HaiDeployError.PROVISION_FAILED,
           deployM('deploy_provisionFailed', {

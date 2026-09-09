@@ -101,6 +101,11 @@ export async function deployCommand(options: DeployCommandOptions): Promise<void
     })
 
     if (!deployResult.success) {
+      if (deployResult.error.ext?.recovery) {
+        core.logger.warn(deployResult.error.suggestion ?? cliM('cli_deploy_command_failed'), {
+          recovery: deployResult.error.ext.recovery,
+        })
+      }
       throw new Error(cliM('cli_deploy_failed', { params: { message: deployResult.error.message } }))
     }
 

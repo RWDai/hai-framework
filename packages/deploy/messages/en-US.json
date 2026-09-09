@@ -22,5 +22,7 @@
   "deploy_credentialMissing": "Missing credential fields: {fields}",
   "deploy_apiError": "{service} API error ({status})",
   "deploy_fileUploadFailed": "File upload failed ({status})",
-  "deploy_provisionNoResult": "No connection info returned from {service}"
+  "deploy_provisionNoResult": "No connection info returned from {service}",
+  "deploy_recoveryFailure": "Deployment stopped at {stage}; inspect the recovery details.",
+  "deploy_recoverySuggestion": "Inspect listed resources in the provider console before retrying with the same project name. Unknown means the request may have created a resource. Reused resources are never deleted automatically; remove newly created resources manually only after checking their use."
 }

@@ -51,7 +51,7 @@
 
 ### ARCH-02｜P2｜为部分成功的基础设施开通提供恢复信息
 
-- [ ] **任务**：部署失败时保留已开通资源、失败步骤、新建/复用状态，并提供安全重试与人工清理指引。
+- [x] **任务**：部署失败时保留已开通资源、失败步骤、新建/复用状态，并提供安全重试与人工清理指引。
 - **证据与影响〔静态确认〕**：[deploy-main.ts](../packages/deploy/src/deploy-main.ts) 第 266 行 `provisionAll()` 顺序开通，后续失败直接返回该错误，局部 `results` 不返回；`deployApp()` 先开通再创建项目、设置变量和构建，后续任一步都可失败。[资源结果类型](../packages/deploy/src/deploy-types.ts) 有 `resourceInfo`，但失败返回没有携带成功清单。现有同名资源复用不能替代失败恢复报告。
 - **验收**：模拟“数据库成功、缓存失败”和“资源开通成功、构建失败”，调用方能准确识别已有资源及恢复步骤；复用资源不被自动删除，重试不无提示地重复创建。
 - **建议负责人/工作量/依赖**：Deploy 维护者 / M / ARCH-01。
@@ -280,3 +280,5 @@
 - **USER-08**：官网 API 显式按请求 locale 输出 AI 降级、邮件未配置/失败/成功；CLI 全部部署状态接入 cliM，Gallery 加密限制和示例状态双语化。官网双语 handler 测试 4/4、CLI 10/10、CLI typecheck、两应用 check 0 错误通过；README、deploy/应用审查 skills 及中英文消息同步。
 
 - **ARCH-01**：开通结果改为 Core 可消费的 JSON 对象/数组覆盖：PostgreSQL、Redis TLS、R2 S3、Resend SMTP 和短信渠道；父节点覆盖仍经 Schema 校验，构建与运行使用同配置，Storage 生成器/环境样例改为扁平契约。真实 createProject 后注入模拟开通结果，经 Core 和各模块 Schema 验证通过；CLI 配置 17/17、Deploy 71/71、Core 配置 29/29、CLI/Deploy typecheck/build 通过。README、Core/Deploy skills、LLMS、模板同步；未创建或连接真实云资源。
+
+- **ARCH-02**：ProvisionResult 标记新建/复用，失败通过 getDeployRecovery 返回项目、阶段、平台项目 ID 与不含凭证的资源清单；已知部分资源保留 ID，结果未知要求先核对，不自动删除。数据库成功缓存失败、已建无连接信息、真实构建 exit 7、同名重试复用回归通过；Deploy 75/75、typecheck/build、CLI 11/11 通过。README、Deploy skill、LLMS 与 CLI 恢复展示同步。
