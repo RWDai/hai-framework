@@ -1212,6 +1212,21 @@ importers:
         specifier: 'catalog:'
         version: 2.9.0
     devDependencies:
+      '@h-ai/cache':
+        specifier: workspace:*
+        version: link:../cache
+      '@h-ai/deploy':
+        specifier: workspace:*
+        version: link:../deploy
+      '@h-ai/reach':
+        specifier: workspace:*
+        version: link:../reach
+      '@h-ai/reldb':
+        specifier: workspace:*
+        version: link:../reldb
+      '@h-ai/storage':
+        specifier: workspace:*
+        version: link:../storage
       '@types/fs-extra':
         specifier: 'catalog:'
         version: 11.0.4

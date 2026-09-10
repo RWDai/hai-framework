@@ -54,6 +54,11 @@
     "yaml": "catalog:"
   },
   "devDependencies": {
+    "@h-ai/cache": "workspace:*",
+    "@h-ai/deploy": "workspace:*",
+    "@h-ai/reach": "workspace:*",
+    "@h-ai/reldb": "workspace:*",
+    "@h-ai/storage": "workspace:*",
     "@types/fs-extra": "catalog:",
     "@types/node": "catalog:",
     "@types/prompts": "catalog:",

@@ -1,13 +1,13 @@
 import { mkdtempSync, rmSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
+import { CacheConfigSchema } from '@h-ai/cache'
 import { core } from '@h-ai/core'
+import { deploy } from '@h-ai/deploy'
+import { ReachConfigSchema } from '@h-ai/reach'
+import { ReldbConfigSchema } from '@h-ai/reldb'
+import { StorageConfigSchema } from '@h-ai/storage'
 import { afterEach, expect, it, vi } from 'vitest'
-import { CacheConfigSchema } from '../../cache/src/index.js'
-import { deploy } from '../../deploy/src/index.js'
-import { ReachConfigSchema } from '../../reach/src/index.js'
-import { ReldbConfigSchema } from '../../reldb/src/index.js'
-import { StorageConfigSchema } from '../../storage/src/index.js'
 import { createProject } from '../src/commands/cli-create.js'
 
 const temporary: string[] = []
